@@ -48,26 +48,29 @@ def treat_WLD(sites):
                             # print(f"{s1name}_1_{s2name}_X_{s3name}_2_{bet}")
                             pass
     return list(set(found))
-def treat_Handicap_WLD(oddsHandicap,shandicapName,sitesWLD):
-    try:
-        o1=oddsHandicap["1_0"]
-        o2=oddsHandicap["2_0"]
-    except:
-        print(f"handicapes : {oddsHandicap} ")
+
+def treat_Handicap_WLD(sitesHandicap,sitesWLD):
     found = []
-    for site2,sname2 in sitesWLD: 
-        for site3,sname3 in sitesWLD: 
-            if not (sname2==shandicapName and sname2==sname3):
-                draw = site2["X"]
-                w2 = site3["2"]
-                try : 
-                    ratio = (1/o1)+ (o1-1)/(o1*draw)+(1/w2)
-                    if ratio<= 1.1:
-                        print(f"Handi WLD ratio {sname1}_1_{sname2}_X_{sname3}_2 {ratio}")
-                    if ratio<= 0.997:
-                        found.append((f"{sname1}_1_{sname2}_X_{sname3}_2",ratio))
-                except :
-                    pass
+    for oddsHandicap,sname1 in sitesHandicap:
+        for site2,sname2 in sitesWLD: 
+            for site3,sname3 in sitesWLD: 
+                for hdTeam,winTeam in [("1_0","2")("2_0","1")]:
+                    if not (sname2==sname1 and sname2==sname3):
+                        try:
+                            o1 = hdTeam["1_0"]
+                            draw = site2["X"]
+                            w2 = site3[winTeam]
+                            try : 
+                                ratio = (1/o1)+ (o1-1)/(o1*draw)+(1/w2)
+                                if ratio<= 1.1:
+                                    print(f"Handi WLD ratio {sname1}_1handi0_{sname2}_X_{sname3}_2 {ratio}")
+                                if ratio<= 0.997:
+                                    found.append((f"{sname1}_1_{sname2}_X_{sname3}_2",ratio))
+                            except :
+                                pass
+                        except:
+                            print(f"handicapes : {oddsHandicap} ") 
+        return found
 
 def treat_OverUnder(sites):
     found=[]
@@ -269,12 +272,11 @@ if __name__ == "__main__":
                         if site!={} ]
         
         for type,func in [('OU',treat_OverUnder),('WLD',treat_WLD),('BTTS',treat_BTTS),('Handicap',treat_OverUnder)]:
-            
             arbitrage=arbitrage+func([(site[type],sname) for site,sname in valid_sites if type in site.keys()])
-        for odds1,sname1 in valid_sites: 
-            if 'Handicap' in odds1.keys():
-                sitesWLD=  [(site['WLD'],sname) for site,sname in valid_sites if 'WLD' in site.keys()]
-                arbitrage=arbitrage+treat_Handicap_WLD(odds1["Handicap"],sname1,sitesWLD)
+
+        sitesHandicap = [(site['Handicap'],sname) for site,sname in valid_sites if 'Handicap' in site.keys()]
+        sitesWLD=  [(site['WLD'],sname) for site,sname in valid_sites if 'WLD' in site.keys()]
+        arbitrage=arbitrage+treat_Handicap_WLD(sitesHandicap,sitesWLD)
 
         print("-------------------------------------------------")
     print(arbitrage)
