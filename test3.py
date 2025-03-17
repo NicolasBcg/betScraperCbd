@@ -13,34 +13,55 @@ def get_matches_pinnacle():
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     driver = webdriver.Chrome(options=chrome_options)
+    driver.set_page_load_timeout(30)
     time.sleep(5)
-    url = "https://www.pinnacle.bet/en/soccer/matchups/highlights/"
+    # url = "https://www.pinnacle.bet/en/soccer/matchups/highlights/"
+    # driver.get(url)
+    url = "https://www.pinnacle.bet/en/soccer/leagues/"
     driver.get(url)
-
     # Wait for the dynamic content to load (adjust time as needed or use explicit waits)
-    time.sleep(10)
-    for _ in range(8):
-        html = driver.page_source
-        soup = BeautifulSoup(html, "html.parser")
-        matches = []
+    time.sleep(5)
+    matches = []
+    leagues_container = BeautifulSoup(driver.page_source, "html.parser").find("div", {"data-test-id": "Browse-Leagues"})
 
-        for a in soup.find_all("a", href=True):
-            flex_div = a.find("div", class_=lambda x: x and "flex-row" in x)
-            if not flex_div:
-                continue
+    print("ALL OK")
+    leagues_containers = list(set([league_container["href"].rstrip("/") for league_container in leagues_container.find_all("a", href=True) ]))
 
-            main_href = a["href"].rstrip("/") 
+    for league in leagues_containers:
+        url = "https://www.pinnacle.bet"+league
+        driver.get(url)
+        found= False
+        # Wait for the dynamic content to load (adjust time as needed or use explicit waits)
+        time.sleep(2)  
+        iteration = 0  
+        while iteration < 4:
+            html = driver.page_source
+            soup = BeautifulSoup(html, "html.parser")
+            
 
-            spans = flex_div.find_all("span", class_="ellipsis")
-            if len(spans) < 2:
-                continue
+            for a in soup.find_all("a", href=True):
+                flex_div = a.find("div", class_=lambda x: x and "flex-row" in x)
+                if not flex_div:
+                    continue
 
-            team1 = preprocess_team_names(spans[0].get_text(strip=True))
-            team2 = preprocess_team_names(spans[1].get_text(strip=True))
-            matches.append(( team1, team2,main_href))
-        if matches!=[]: 
-            break
-        time.sleep(3)
+                main_href = a["href"].rstrip("/") 
+
+                spans = flex_div.find_all("span", class_="ellipsis")
+                if len(spans) < 2:
+                    continue
+
+                team1 = preprocess_team_names(spans[0].get_text(strip=True))
+                team2 = preprocess_team_names(spans[1].get_text(strip=True))
+                matches.append(( team1, team2,main_href))
+                found = True
+            if found: 
+                iteration = 8
+            else :
+                time.sleep(1)
+                iteration+=1
+        if matches == []:
+
+            print(f"Problem with : {league}" )
 
     # for match in matches:
     #     print(match)
@@ -50,11 +71,11 @@ def get_matches_pinnacle():
 def preprocess_team_names(name):
     return re.sub(r'\s*\(.*?\)', '', name).lower()
 
-# get_matches_pinnacle()
+# for m in get_matches_pinnacle():
+#     print(m)
 
 def clean_string(s):
     return re.sub(r'AC|FC|AS|\s|-', '', s).lower().replace(" ", "")
-
 
 def get_all_bets_Pinnacle(common,blank):
     r = []
@@ -235,10 +256,9 @@ def format_pinnacle_Handicap(res,team1,team2):
     if clean_string(team1)<=clean_string(team2):
         t1="2"
         t2="1"
-
     for i in range(0, len(res), 2):
-        HDC[f"1_{res[i][0]}"]=float(res[i][1])
-        HDC[f"2_{res[i][0]}"]=float(res[i][1])
+        HDC[f"{t1}_{res[i][0]}"]=float(res[i][1])
+        HDC[f"{t2}_{res[i+1][0]}"]=float(res[i+1][1])
     return HDC
 
 

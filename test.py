@@ -23,7 +23,7 @@ def treat_BTTS(sites):
                 if s2name!=s1name:
                     try :
                         ratio = 1/site1[bet+"Yes"]+1/site2[bet+"No"]
-                        if ratio<= 1.03:
+                        if ratio<= 1.015:
                             print(f"YN ratio {ratio}")
                         if ratio<= 0.997:
                             found.append((f"{s1name}_Yes_{s2name}_No_{bet}",ratio))
@@ -40,7 +40,7 @@ def treat_WLD(sites):
                     if not (s2name==s1name and s2name==s3name):
                         try : 
                             ratio = 1/site1[bet+"1"]+1/site2[bet+"X"]+1/site3[bet+"2"]
-                            if ratio<= 1.03:
+                            if ratio<= 1.015:
                                 print(f"WLD ratio {s1name}_1_{s2name}_X_{s3name}_2_{bet} {ratio}")
                             if ratio<= 0.997:
                                 found.append((f"{s1name}_1_{s2name}_X_{s3name}_2_{bet}",ratio))
@@ -52,25 +52,61 @@ def treat_WLD(sites):
 def treat_Handicap_WLD(sitesHandicap,sitesWLD):
     found = []
     for oddsHandicap,sname1 in sitesHandicap:
-        for site2,sname2 in sitesWLD: 
-            for site3,sname3 in sitesWLD: 
-                for hdTeam,winTeam in [("1_0","2")("2_0","1")]:
-                    if not (sname2==sname1 and sname2==sname3):
-                        try:
-                            o1 = hdTeam["1_0"]
-                            draw = site2["X"]
-                            w2 = site3[winTeam]
-                            try : 
-                                ratio = (1/o1)+ (o1-1)/(o1*draw)+(1/w2)
-                                if ratio<= 1.1:
-                                    print(f"Handi WLD ratio {sname1}_1handi0_{sname2}_X_{sname3}_2 {ratio}")
-                                if ratio<= 0.997:
-                                    found.append((f"{sname1}_1_{sname2}_X_{sname3}_2",ratio))
-                            except :
+        if oddsHandicap!={}:
+            print(f'{sname1} : {oddsHandicap}')
+            for site2,sname2 in sitesWLD: 
+                for site3,sname3 in sitesWLD: 
+                    for hdTeam,winTeam in [("1_0","2"),("2_0","1")]:
+                        if not (sname2==sname1 and sname2==sname3):
+                            try:
+                                o1 = oddsHandicap[hdTeam]
+                                draw = site2["X"]
+                                w2 = site3[winTeam]
+                                try : 
+                                    ratio = (1/o1)+ (o1-1)/(o1*draw)+(1/w2)
+                                    if ratio<= 1.015:
+                                        print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}handi0_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
+                                    if ratio<= 0.995:
+                                        found.append((f"Handi WLD {sname1}_1_{sname2}_X_{sname3}_2",ratio))
+                                except :
+                                    pass
+                            except:
                                 pass
-                        except:
-                            print(f"handicapes : {oddsHandicap} ") 
-        return found
+
+                    for hdTeam,winTeam in [("1_+0.25","2"),("2_+0.25","1")]:
+                        if not (sname2==sname1 and sname2==sname3):
+                            try:
+                                o1 = oddsHandicap[hdTeam]
+                                draw = site2["X"]
+                                w2 = site3[winTeam]
+                                try : 
+                                    ratio = (1/o1)+ (1/(2*draw))+(1/w2)
+                                    if ratio<= 1.015:
+                                        print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}handi0_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
+                                    if ratio<= 0.995:
+                                        found.append((f"{sname1}_1_{sname2}_X_{sname3}_2",ratio))
+                                except :
+                                    pass
+                            except:
+                                pass
+                    for hdTeam,winTeam in [("1_-0.25","2"),("2_-0.25","1")]:
+                        if not (sname2==sname1 and sname2==sname3):
+                            try:
+                                o1 = oddsHandicap[hdTeam]
+                                draw = site2["X"]
+                                w2 = site3[winTeam]
+                                try : 
+                                    ratio = (1/o1)+ (1-(1/(2*o1)))/(draw)+(1/w2)
+                                    if ratio<= 1.015:
+                                        print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}handi0_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
+                                    if ratio<= 0.995:
+                                        found.append((f"{sname1}_1_{sname2}_X_{sname3}_2",ratio))
+                                except :
+                                    pass
+                            except:
+                                pass
+
+    return found
 
 def treat_OverUnder(sites):
     found=[]
@@ -81,15 +117,16 @@ def treat_OverUnder(sites):
                 for i in ["0.5","1.5","2.5","3.5","4.5"]:
                     try : 
                         ratio = 1/site1["O_"+i]+1/site2["U_"+i]
-                        print(f"OU {i} ratio {ratio}")
-                        if ratio<= 1.03:
+                        if ratio<= 1.01:
+                            print(f"OU {i} ratio {ratio}")
+                        if ratio<= 0.995:
                             found.append((f"{s1name}_O_{s2name}_U_{i}",ratio))
                     except : 
                         pass
                 for i in ["0.5","1","1.5","2","2.5"]:
                     try : 
                         ratio = 1/site1["1_+"+i]+1/site2["2_-"+i]
-                        if ratio<= 1.03:
+                        if ratio<= 1.015:
                             print(f"Handicap {i} ratio {ratio}")
                         if ratio<= 0.995:
                             found.append((f"Handicap_{s1name}_+_{s2name}_-_{i}",ratio))
@@ -97,7 +134,7 @@ def treat_OverUnder(sites):
                         pass
                 try : 
                     ratio = 1/site1["1_0"]+1/site2["2_0"]
-                    if ratio<= 1.03:
+                    if ratio<= 1.015:
                         print(f"OU {i} ratio {ratio}")
                     if ratio<= 0.995:
                         found.append((f"Handicap_{s1name}_+_{s2name}_-_{i}",ratio))
@@ -217,6 +254,8 @@ if __name__ == "__main__":
         # else : 
         #     print(f"Team {team_key} found in {found} lists")
 
+    # common= common[:10]
+
     print("!!!COMMON!!!")
     for c in common: 
         print(c)
@@ -273,7 +312,16 @@ if __name__ == "__main__":
         
         for type,func in [('OU',treat_OverUnder),('WLD',treat_WLD),('BTTS',treat_BTTS),('Handicap',treat_OverUnder)]:
             arbitrage=arbitrage+func([(site[type],sname) for site,sname in valid_sites if type in site.keys()])
-
+    for s1x_odds,s188_odds,sPinnacle_odds,sIvi_odds,sMega_odds,common_match in zip(s1x,s188,sPinnacle,sIvi,sMega,common):
+        print("--------------------------------------------------")
+        print(common_match)
+        valid_sites = [(site,sname) for site,sname in 
+                       [(s1x_odds,"1xbet"),
+                        (s188_odds,"188bet"),
+                        (sPinnacle_odds,'Pinnacle'),
+                         (sIvi_odds,"Ivi"),
+                        (sMega_odds,"Mega")]
+                        if site!={} ]
         sitesHandicap = [(site['Handicap'],sname) for site,sname in valid_sites if 'Handicap' in site.keys()]
         sitesWLD=  [(site['WLD'],sname) for site,sname in valid_sites if 'WLD' in site.keys()]
         arbitrage=arbitrage+treat_Handicap_WLD(sitesHandicap,sitesWLD)

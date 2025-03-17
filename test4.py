@@ -11,6 +11,7 @@ import re
 
 def get_matches_ivi():
     chrome_options = Options()
+    
     chrome_options.add_argument("--headless")  # Run in headless mode
     # chrome_options.add_argument("--disable-gpu")
     # chrome_options.add_argument("--window-size=700,500")
@@ -18,14 +19,31 @@ def get_matches_ivi():
     # chrome_options.add_argument("--disable-dev-shm-usage")
     # chrome_options.add_argument("--ssl-version-max=tls1.2")
     driver = webdriver.Chrome(options=chrome_options)
+    driver.set_page_load_timeout(30)  # 30 seconds timeout
+
     time.sleep(5)
-    try:
-        # Navigate to the URL
-        url = "https://ivibet.com/prematch/football"
+    
+    # Navigate to the URL
+    # url = "https://ivibet.com/prematch/football"
+    # driver.get(url)
+    # time.sleep(3)  # Adjust the sleep time as needed
+    url = "https://ivibet.com/prematch/football/leagues"
+    driver.get(url)
+    events_data = []
+    time.sleep(4)
+    for _ in range(10):
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        championship_Links = soup.find_all(class_=re.compile(r'leagues-list_name'))
+        time.sleep(1)
+        if championship_Links !=[]:
+            break
+    if championship_Links ==[]:
+        print("IVI NOT FOUND")
+    for link_div in championship_Links:
+        url = "https://ivibet.com"+link_div.get("href", "")
         driver.get(url)
-        time.sleep(4)  # Adjust the sleep time as needed
+        time.sleep(1)
         for i in range(10):  # Scroll 3 times, adjust as needed
-            events_data = []
             driver.execute_script("window.scrollBy(0, 200);")  # Scroll down 500 pixels 
             time.sleep(1)
             soup = BeautifulSoup(driver.page_source, "html.parser")
@@ -65,12 +83,10 @@ def get_matches_ivi():
                 # Print the list of tuples
                 # for event_tuple in events_data:
                 #     print(event_tuple)
-            
-    except Exception as e:
-        print("An error occurred:", e)
-    finally:
-        driver.quit()
+    
+    driver.quit()
     return events_data
+
 
 def get_all_bets_Ivi(common,blank):
     r = []
@@ -132,34 +148,46 @@ def format_ivi_1X2(res,team1,team2):
         team1=team2
         team2=tt
     for r in res:
-        value = max([float(x) for x in r if isinstance(x, str) and x.replace('.', '', 1).isdigit()])
-        if r[0]==team1:
-            WLD["1"]=value
-        if r[0]==team2:
-            WLD["2"]=value
-        if r[0]=="draw":
-            WLD["X"]=value
+        try:
+            value = max([float(x) for x in r if isinstance(x, str) and x.replace('.', '', 1).isdigit()])
+            if r[0]==team1:
+                WLD["1"]=value
+            if r[0]==team2:
+                WLD["2"]=value
+            if r[0]=="draw":
+                WLD["X"]=value
+        except : 
+            print("ERROR IVI VALUE")
+            print(r)
     return WLD
 
 def format_ivi_BTTS(res,team1,team2):#both team to score
     BTTS = {}
     for r in res:
-        value = max([float(x) for x in r if isinstance(x, str) and x.replace('.', '', 1).isdigit()])
-        if r[0] == 'yes': 
-            BTTS['Yes']=value
-        elif r[0] == 'no':
-            BTTS['No']=value
+        try : 
+            value = max([float(x) for x in r if isinstance(x, str) and x.replace('.', '', 1).isdigit()])
+            if r[0] == 'yes': 
+                BTTS['Yes']=value
+            elif r[0] == 'no':
+                BTTS['No']=value
+        except : 
+            print("ERROR IVI VALUE")
+            print(r)
     return BTTS
 
 def format_ivi_OverUnder(res,team1,team2):
     OverUnders = {}
     for r in res:
-        value = max([float(x) for x in r if isinstance(x, str) and x.replace('.', '', 1).isdigit()])
-        parts = r[0].split()
-        if "over" in parts:
-            OverUnders[f"O_{parts[-1]}"] = value
-        elif "under" in parts:
-            OverUnders[f"U_{parts[-1]}"] = value
+        try: 
+            value = max([float(x) for x in r if isinstance(x, str) and x.replace('.', '', 1).isdigit()])
+            parts = r[0].split()
+            if "over" in parts:
+                OverUnders[f"O_{parts[-1]}"] = value
+            elif "under" in parts:
+                OverUnders[f"U_{parts[-1]}"] = value
+        except : 
+            print("ERROR IVI VALUE")
+            print(r)
     return OverUnders
 
 def format_ivi_Handicap(res,team1,team2):
