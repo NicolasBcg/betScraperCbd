@@ -149,6 +149,7 @@ def compute_inverse_sum(selected_keys, dict1, dict2):
         else:
             total += 1 / dict2[key]
     return total
+
 def treat_HalfTime_FullTime(sites):
     keys = list(sites[0][0].keys())  # Both dicts have the same keys
     n = len(keys)
