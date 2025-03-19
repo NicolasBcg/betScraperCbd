@@ -69,6 +69,19 @@ def get_all_bets_188(common,blank):
             else : 
                 r.append(blank) 
     return r
+def get_all_bets_threader_188(queue_in,queue_out,blank):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=False,args=["--window-size=420,250"])  # Change to True if needed
+        page = browser.new_page()
+        time.sleep(5)
+        while True :
+            to_get = queue_in.get()
+            if to_get == 0:
+                break 
+            elif to_get == -1:
+                queue_out.put(blank)
+            else : 
+                queue_out.put(get_bets_188(page,to_get))
 
 def get_bets_188(page,target_teams):
     url = "https://sports.sportsbook-188.com/en-gb/sports/match/today/football/main_markets?coupon=102"
@@ -145,11 +158,7 @@ def extract_bets(page,team1,team2):
                     time.sleep(0.4)  # Allow AJAX data to load
                 else : 
                     break
-        # print(bet_type)
-        # if target_div:
-        #     print("✅ Found the grandparent div:")
-        # else:
-        #     print("❌ Could not find the target div.")
+
         list_of_ods = []
         # if found:
         #     oddsPannel=target_div.locator('[data-id="OddsPanelContainer"]').all()
@@ -195,10 +204,10 @@ def format_188bet_1X2(res,team1,team2):
 def format_188bet_BTTS(res,team1,team2):#both team to score
     BTTS = {}
     for r in [0,1]:
-        if r != []:
+        if len(res) >= 2:
             BTTS[res[r][0]]=float(res[r][1])
     for r in [2,3]:
-        if r != []:
+        if len(res) >= 2:
             BTTS["1st_Half_"+res[r][0]]=float(res[r][1])
     return BTTS
 

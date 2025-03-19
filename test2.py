@@ -9,6 +9,16 @@ from selenium.webdriver.common.keys import Keys
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
+def setup_driver():
+    """Set up a Selenium WebDriver instance."""
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--disable-gpu")
+    driver = webdriver.Chrome(options=chrome_options)
+    driver.set_page_load_timeout(30)
+    time.sleep(5)  # Ensure we don't trigger rate limits
+    return driver
+
 def get_matches_1xbet():
     chrome_options = uc.ChromeOptions()
     chrome_options.add_argument("--headless")  # Run in headless mode
@@ -46,23 +56,24 @@ def get_matches_1xbet():
         return matches
     return matches
 
+
+def get_all_bets_threader_1xbet(queue_in,queue_out,blank):
+    driver= setup_driver()
+    while True :
+        to_get = queue_in.get()
+        if to_get == 0:
+            driver.quit()
+            break 
+        elif to_get == -1:
+            queue_out.put(blank)
+        else : 
+            queue_out.put(get_bets_1xbet(driver,to_get,blank))
+
+
+
 def get_all_bets_1xbet(common,blank):
     s1x = []
-    # chrome_options = uc.ChromeOptions()
-    # # chrome_options.add_argument("--headless")  # Run in headless mode
-    # chrome_options.add_argument("--disable-gpu")
-    # driver = uc.Chrome(options=chrome_options)
-    # time.sleep(5)
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")  # Run in headless mode
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--window-size=700,500")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--ssl-version-max=tls1.2")
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.set_page_load_timeout(30)
-    time.sleep(5)
+    driver=setup_driver()
     for t1xbet in common:
         if t1xbet!=-1:
             s1x.append(get_bets_1xbet(driver,t1xbet,blank))  # Replace with desired team names
@@ -74,9 +85,6 @@ def get_bets_1xbet(driver,match,blank={}):
     team1,team2,match_url = match
 
     url = "https://1xbet.com"+match_url
-    
-    # print(html.status_code)
-    # print(url)
     try:
         driver.get(url)
     except:
@@ -113,14 +121,8 @@ def get_bets_1xbet(driver,match,blank={}):
             bets[bet_name]= formatter(bet_dict[key],team1,team2)
 
     return bets
-# chrome_options = Options()
-# chrome_options.add_argument("--headless")
-# chrome_options.add_argument("--disable-extensions")
-# chrome_options.add_argument("--disable-gpu")
-# chrome_options.add_argument("--no-sandbox")
-# driver = uc.Chrome(options=chrome_options)
-# time.sleep(5)
-# print(get_bets_1xbet(driver,('Real Valladolid', 'Las Palmas', '/en/line/football/127733-spain-la-liga/249508928-real-valladolid-las-palmas')))
+
+
 def clean_string(s):
     return re.sub(r'AC|FC|AS|\s|-', '', s).lower().replace(" ", "")
 def format_1xbet_1X2(res,team1,team2):
@@ -175,24 +177,3 @@ def format_1xbet_Handicap(res,team1,team2):
             HDC[f"2_{handicap}"]=float(r[1])
 
     return HDC
-
-
-# from selenium import webdriver
-# # from selenium.webdriver.chrome.options import Options
-# chrome_options = Options()
-# # chrome_options.add_argument("--headless")  # Run in headless mode
-# chrome_options.add_argument("--disable-gpu")
-# chrome_options.add_argument("--window-size=700,500")
-# chrome_options.add_argument("--no-sandbox")
-# chrome_options.add_argument("--disable-dev-shm-usage")
-# chrome_options.add_argument("--ssl-version-max=tls1.2")
-# driver = webdriver.Chrome(options=chrome_options)
-# time.sleep(5)
-
-# # print(get_bets_1xbet(driver,('West Ham United', 'Newcastle United', '/en/line/football/88637-england-premier-league/250297693-west-ham-united-newcastle-united')))
-# # (/en/line/football/88637-england-premier-league/247443167-arsenal-west-ham-united,'Arsenal', 'West Ham United')
-# driver = uc.Chrome()
-# time.sleep(5)
-# print(get_bets_1xbet(driver,('Everton', 'West Ham United', '/en/line/football/88637-england-premier-league/251363933-everton-west-ham-united')))
-# for match in get_matches_1xbet():
-#     print(match)

@@ -9,7 +9,7 @@ import json
 # Create a new Chrome session
 #
 # https://megapari.com/service-api/LineFeed/GetGameZip?id=250242734&lng=en&isSubGames=true&GroupEvents=true&countevents=250&grMode=4&partner=192&topGroups=&country=83&marketType=1
-def initDriver():
+def setup_driver():
     chrome_options = Options()
     chrome_options.add_argument("--headless")  # Run in headless mode
     chrome_options.add_argument("--disable-gpu")
@@ -21,7 +21,7 @@ def initDriver():
     time.sleep(5)
     return driver
 
-def get_matches_mega(driver = initDriver(),selfdriver = True):
+def get_matches_mega(driver = setup_driver(),selfdriver = True):
     try:
         # Navigate to the URL
         url = "https://megapari.com/en/line/football"
@@ -61,9 +61,6 @@ def get_matches_mega(driver = initDriver(),selfdriver = True):
             else:
                 events_data.append((None, None, href))
         
-        # Print the list of tuples
-        # for event_tuple in events_data:
-        #     print(event_tuple)
             
     except Exception as e:
         print("An error occurred:", e)
@@ -75,18 +72,25 @@ def get_matches_mega(driver = initDriver(),selfdriver = True):
 
 def get_all_bets_Mega(common,blank):
     r = []
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    driver = webdriver.Chrome(options=chrome_options)
-
-    time.sleep(5)
+    driver= setup_driver()
     for tMega in common:
         if tMega!=-1:
             r.append(get_bets_mega(driver,tMega))  # Replace with desired team names
         else : 
             r.append(blank) 
     return r
-
+def get_all_bets_threader_Mega(queue_in,queue_out,blank):
+    driver= setup_driver()
+    while True :
+        to_get = queue_in.get()
+        if to_get == 0:
+            driver.quit()
+            break 
+        elif to_get == -1:
+            queue_out.put(blank)
+        else : 
+            queue_out.put(get_bets_mega(driver,to_get))
+            
 def get_bets_mega(driver,match):
     team1,team2,match_url = match
     
@@ -176,18 +180,3 @@ def format_mega_OverUnder(res,team1,team2):
         elif 10 == parts:
             OverUnders[f"U_{r[1]}"] = value
     return OverUnders
-    # for bet_group in soup.find_all("div",{'data-test': 'market-container'}):
-
-
-# chrome_options = Options()
-# chrome_options.add_argument("--headless")  # Run in headless mode
-# chrome_options.add_argument("--disable-gpu")
-# chrome_options.add_argument("--window-size=700,500")
-# chrome_options.add_argument("--no-sandbox")
-# chrome_options.add_argument("--disable-dev-shm-usage")
-# chrome_options.add_argument("--ssl-version-max=tls1.2")
-# driver = webdriver.Chrome(options=chrome_options)
-# time.sleep(5)
-# print(get_bets_mega(driver,get_matches_mega()[0])) #get_matches_mega()[0]))
-# get_bets_mega(driver,('Roma', 'Athletic Bilbao', '/en/line/football/118593-uefa-europa-league/250121377-roma-athletic-bilbao'))
-    

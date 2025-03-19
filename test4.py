@@ -4,97 +4,126 @@ from selenium.webdriver.common.by import By
 import time
 from bs4 import BeautifulSoup
 import re
+import threading
+from queue import Queue
 # Set up headless Chrome
 
-
+def setup_driver():
+    """Set up a Selenium WebDriver instance."""
+    chrome_options = Options()
+    # chrome_options.add_argument("--headless")
+    driver = webdriver.Chrome(options=chrome_options)
+    driver.set_page_load_timeout(15)
+    time.sleep(5)  # Ensure we don't trigger rate limits
+    return driver
 # Create a new Chrome session
 
-def get_matches_ivi():
-    chrome_options = Options()
+def process_league(driver, link_div):
+    """Fetch event data from a single league page using a shared driver."""
+    league_url = "https://ivibet.com" + link_div
+    driver.get(league_url)
+    time.sleep(0.5)
     
-    chrome_options.add_argument("--headless")  # Run in headless mode
-    # chrome_options.add_argument("--disable-gpu")
-    # chrome_options.add_argument("--window-size=700,500")
-    # chrome_options.add_argument("--no-sandbox")
-    # chrome_options.add_argument("--disable-dev-shm-usage")
-    # chrome_options.add_argument("--ssl-version-max=tls1.2")
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.set_page_load_timeout(30)  # 30 seconds timeout
-
-    time.sleep(5)
-    
-    # Navigate to the URL
-    # url = "https://ivibet.com/prematch/football"
-    # driver.get(url)
-    # time.sleep(3)  # Adjust the sleep time as needed
-    url = "https://ivibet.com/prematch/football/leagues"
-    driver.get(url)
     events_data = []
-    time.sleep(4)
+    
+    for _ in range(10):  # Scroll multiple times to load matches
+        time.sleep(0.5)
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        
+        event_links = soup.find_all("a", {"data-test": "eventLink"})
+        
+        if event_links:
+            for event in event_links:
+                href = event.get("href", "")
+                team_container = event.find("div", {"data-test": "teamSeoTitles"})
+                
+                if team_container:
+                    spans = team_container.find_all("span")
+                    if len(spans) >= 2:
+                        team1 = spans[0].get_text(strip=True)
+                        team2 = spans[1].get_text(strip=True)
+                        events_data.append((team1, team2, href))
+            
+            break  # Stop scrolling if data is found
+
+    return events_data
+
+def worker(queue, results):
+    """Thread worker function to process leagues using a shared driver."""
+    driver = setup_driver()
+    while not queue.empty():
+        link_div = queue.get()
+        if link_div is None:
+            driver.quit()
+            break  # Stop if we get a termination signal
+
+        try:
+            events = process_league(driver, link_div)
+            results.extend(events)  # Append results safely
+        except Exception as e:
+            print(f"Error processing league: {e}")
+        finally:
+            queue.task_done()  # Mark task as completed
+def get_matches_ivi():
+    """Main function to get matches using a limited WebDriver pool."""
+    driver = setup_driver()  # Single driver for main page
+
+    # Load the main page
+    driver.get("https://ivibet.com/prematch/football/leagues")
+    time.sleep(2)
+    
+    # Extract championship links
+    championship_Links = []
     for _ in range(10):
         soup = BeautifulSoup(driver.page_source, "html.parser")
-        championship_Links = soup.find_all(class_=re.compile(r'leagues-list_name'))
-        time.sleep(1)
-        if championship_Links !=[]:
+        championship_Links = [a["href"] for a in soup.select('div[data-test="sportPageWrapper"] a') if "href" in a.attrs]
+
+        # championship_Links = soup.find_all(class_=re.compile(r'leagues-list_name'))
+        if championship_Links:
             break
-    if championship_Links ==[]:
-        print("IVI NOT FOUND")
-    for link_div in championship_Links:
-        url = "https://ivibet.com"+link_div.get("href", "")
-        driver.get(url)
         time.sleep(1)
-        for i in range(10):  # Scroll 3 times, adjust as needed
-            driver.execute_script("window.scrollBy(0, 200);")  # Scroll down 500 pixels 
-            time.sleep(1)
-            soup = BeautifulSoup(driver.page_source, "html.parser")
-            # Find all <a> tags with data-test="eventLink"
-            event_links = soup.find_all("a", {"data-test": "eventLink"})
-            if event_links != []:
-                # List to store tuples
-                time.sleep(1)
-                soup = BeautifulSoup(driver.page_source, "html.parser")
-                # Find all <a> tags with data-test="eventLink"
-                event_links = soup.find_all("a", {"data-test": "eventLink"})
-                
-                found = True
-                for event in event_links:
-                    # Get the href
-                    href = event.get("href", "")
-                    
-                    # Find the div that contains the team names.
-                    # According to your snippet, team names are inside <div data-test="teamSeoTitles">, then within <span>
-                    team_container = event.find("div", {"data-test": "teamSeoTitles"})
-                    if team_container:
-                        # The team names are in <span> tags, one for each team.
-                        spans = team_container.find_all("span")
-                        if len(spans) >= 2:
-                            team1 = spans[0].get_text(strip=True)
-                            team2 = spans[1].get_text(strip=True)
-                            events_data.append((team1, team2,href))
-                        else:
-                            # In case there are not two spans, add a placeholder
-                            # events_data.append((None, None, href))
-                            found = False
-                    else:
-                        # events_data.append((None, None, href))
-                        found = False
-                if found :
-                    break
-                # Print the list of tuples
-                # for event_tuple in events_data:
-                #     print(event_tuple)
-    
-    driver.quit()
-    return events_data
+
+    driver.quit()  # Close the initial driver
+
+    if not championship_Links:
+        print("IVI NOT FOUND")
+        return []
+
+    # Create a queue and populate it with league links
+    queue = Queue()
+    print('links')
+    print(len(championship_Links))
+    for link_div in championship_Links:
+        queue.put(link_div)
+
+
+    results = []
+    threads = []
+
+    # Start worker threads, each with a driver
+    for _ in range(3):
+        thread = threading.Thread(target=worker, args=(queue, results))
+        thread.start()
+        threads.append(thread)
+
+    # Wait for all threads to finish
+    for thread in threads:
+        thread.join()
+
+
+    return results
+if __name__ == "__main__":
+    start = time.time()
+    for m in get_matches_ivi():
+        print(m)
+    print(time.time()-start)
+
+
 
 
 def get_all_bets_Ivi(common,blank):
     r = []
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    driver = webdriver.Chrome(options=chrome_options)
-
-    time.sleep(5)
+    driver = setup_driver()
     for tIvi in common:
         if tIvi!=-1:
             r.append(get_bets_ivi(driver,tIvi))  # Replace with desired team names
@@ -102,21 +131,33 @@ def get_all_bets_Ivi(common,blank):
             r.append(blank) 
     return r
 
+def get_all_bets_threader_Ivi(queue_in,queue_out,blank):
+    driver= setup_driver()
+    while True :
+        to_get = queue_in.get()
+        if to_get == 0:
+            driver.quit()
+            break 
+        elif to_get == -1:
+            queue_out.put(blank)
+        else : 
+            queue_out.put(get_bets_ivi(driver,to_get))
+
 def get_bets_ivi(driver,match):
     team1,team2,match_url = match
     url = "https://ivibet.com"+match_url
     driver.get(url)
     bet_dict = {}
+    market_countainers = []
     for _ in range(10):
+        time.sleep(0.5)
         soup = BeautifulSoup(driver.page_source, "html.parser")
-        time.sleep(1)
-        driver.execute_script("window.scrollBy(0, 50);")
-        if soup.find_all("div",{'data-test': 'market-countainer'}) != []:
-            print("here")
+        market_countainers = soup.find_all("div",{'data-test': 'market-countainer'})
+        if market_countainers != []:
             break
-    soup = BeautifulSoup(driver.page_source, "html.parser")
+        driver.execute_script("window.scrollBy(0, 50);")
     all_bets = {}
-    for bet_market in soup.find_all("div",{'data-test': 'market-countainer'}):
+    for bet_market in market_countainers:
         market_header = bet_market.find("div", {'data-test': 'sport-event-table-market-header'})
         # Find the span within that div and get its text
         if market_header:
@@ -128,14 +169,17 @@ def get_bets_ivi(driver,match):
                 span_texts = tuple(span.get_text(strip=True) for span in div.find_all("span"))
                 bets.append(span_texts)
             all_bets[bet_type]=bets
+    if "Asian Handicap" in bet_dict.keys():
+        bet_dict["Handicap"] = bet_dict["Handicap"]+bet_dict["Asian Handicap"]
     # print(soup.find_all("div",{'data-test': 'market-countainer'}))
     bet_types = [('Total',"OU",format_ivi_OverUnder),("1x2","WLD",format_ivi_1X2),("Both teams to score","BTTS",format_ivi_BTTS),("Handicap","Handicap",format_ivi_Handicap)]
-
+    
     for key,bet_name,formatter in bet_types :
         if key in all_bets.keys():
             bet_dict[bet_name]= formatter(all_bets[key],team1,team2)
         else :
             bet_dict[bet_name]={}
+    
     return bet_dict
     
 def clean_string(s):
@@ -157,8 +201,7 @@ def format_ivi_1X2(res,team1,team2):
             if r[0]=="draw":
                 WLD["X"]=value
         except : 
-            print("ERROR IVI VALUE")
-            print(r)
+            print(f'ERROR IVI 1X2 VALUE {team1},{team2}  : {r} ')
     return WLD
 
 def format_ivi_BTTS(res,team1,team2):#both team to score
@@ -171,8 +214,7 @@ def format_ivi_BTTS(res,team1,team2):#both team to score
             elif r[0] == 'no':
                 BTTS['No']=value
         except : 
-            print("ERROR IVI VALUE")
-            print(r)
+            print(f'ERROR IVI BTTS VALUE {team1},{team2}  : {r} ')
     return BTTS
 
 def format_ivi_OverUnder(res,team1,team2):
@@ -186,8 +228,7 @@ def format_ivi_OverUnder(res,team1,team2):
             elif "under" in parts:
                 OverUnders[f"U_{parts[-1]}"] = value
         except : 
-            print("ERROR IVI VALUE")
-            print(r)
+            print(f'ERROR IVI OU VALUE {team1},{team2}  : {r} ')
     return OverUnders
 
 def format_ivi_Handicap(res,team1,team2):
@@ -197,16 +238,15 @@ def format_ivi_Handicap(res,team1,team2):
         team1=team2
         team2=tt
     for r in res:
-        parts = r[0].split()
-        handicap = parts.pop(-1).strip("()")
-        team = clean_string(" ".join(parts))
-        if team==clean_string(team1):
-            HDC[f"1_{handicap}"]=float(r[1])
-        if team==clean_string(team2):
-            HDC[f"2_{handicap}"]=float(r[1])
+        if len(r)>=1:
+            parts = r[0].split()
+            handicap = parts.pop(-1).strip("()")
+            team = clean_string(" ".join(parts))
+            if team==clean_string(team1):
+                HDC[f"1_{handicap}"]=float(r[1])
+            if team==clean_string(team2):
+                HDC[f"2_{handicap}"]=float(r[1])
+        else :
+            print(f'ERROR IVI Handi VALUE {team1},{team2}  : {r}')
 
     return HDC
-
-# print(get_bets_ivi(driver,('Club Brugge', 'Aston Villa', '/prematch/football/1008006-uefa-champions-league/5529868-club-brugge-aston-villa'))) #get_matches_ivi()[0]))
-# get_bets_ivi(driver,('Liverpool FC', 'Southampton FC', '/prematch/football/1008013-premier-league/5546294-liverpool-fc-southampton-fc'))
-    

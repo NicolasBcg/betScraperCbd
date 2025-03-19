@@ -6,70 +6,123 @@ from selenium.webdriver.common.action_chains import ActionChains
 from bs4 import BeautifulSoup
 import time
 import re
-
+import threading
+from queue import Queue
 # Set up Selenium with headless Chrome
-
-def get_matches_pinnacle():
+def setup_driver():
+    """Set up a Selenium WebDriver instance."""
     chrome_options = Options()
     chrome_options.add_argument("--headless")
+    # chrome_options.add_argument("--disable-gpu")
     driver = webdriver.Chrome(options=chrome_options)
     driver.set_page_load_timeout(30)
-    time.sleep(5)
-    # url = "https://www.pinnacle.bet/en/soccer/matchups/highlights/"
-    # driver.get(url)
+    time.sleep(5)  # Ensure we don't trigger rate limits
+    return driver
+
+def preprocess_team_names(name):
+    return re.sub(r'\s*\(.*?\)', '', name).lower()
+
+def process_league_pinnacle(driver, link_div):
+    """Fetch event data from a single league page using a shared driver."""
+    url = "https://www.pinnacle.bet" + link_div
+    driver.get(url)
+
+    matches = []
+    found = False
+    time.sleep(0.5)  
+    iteration = 0  
+
+    while iteration < 4:
+        html = driver.page_source
+        soup = BeautifulSoup(html, "html.parser")
+
+        for a in soup.find_all("a", href=True):
+            flex_div = a.find("div", class_=lambda x: x and "flex-row" in x)
+            if not flex_div:
+                continue
+
+            main_href = a["href"].rstrip("/") 
+            spans = flex_div.find_all("span", class_="ellipsis")
+            if len(spans) < 2:
+                continue
+
+            team1 = preprocess_team_names(spans[0].get_text(strip=True))
+            team2 = preprocess_team_names(spans[1].get_text(strip=True))
+            matches.append((team1, team2, main_href))
+            found = True
+        
+        if found: 
+            break
+        else:
+            time.sleep(0.7)
+            iteration += 1
+    return matches
+
+def worker(queue, results):
+    """Thread worker function to process leagues using a shared driver."""
+    driver = setup_driver()
+    while not queue.empty():
+        link_div = queue.get()
+        if link_div is None:
+            driver.quit()
+            break  # Stop if we get a termination signal
+
+        try:
+            events = process_league_pinnacle(driver, link_div)
+            results.extend(events)  # Append results safely
+        except Exception as e:
+            print(f"Error processing league: {e}")
+        finally:
+            queue.task_done()  # Mark task as completed
+
+
+def get_matches_pinnacle():
+    """Main function to get matches using a limited WebDriver pool."""
+    driver= setup_driver()
     url = "https://www.pinnacle.bet/en/soccer/leagues/"
     driver.get(url)
     # Wait for the dynamic content to load (adjust time as needed or use explicit waits)
     time.sleep(5)
-    matches = []
     leagues_container = BeautifulSoup(driver.page_source, "html.parser").find("div", {"data-test-id": "Browse-Leagues"})
 
     print("ALL OK")
-    leagues_containers = list(set([league_container["href"].rstrip("/") for league_container in leagues_container.find_all("a", href=True) ]))
+    championship_Links = list(set([league_container["href"].rstrip("/") for league_container in leagues_container.find_all("a", href=True) ]))
+    
+    driver.quit()  # Close the initial driver
 
-    for league in leagues_containers:
-        url = "https://www.pinnacle.bet"+league
-        driver.get(url)
-        found= False
-        # Wait for the dynamic content to load (adjust time as needed or use explicit waits)
-        time.sleep(2)  
-        iteration = 0  
-        while iteration < 4:
-            html = driver.page_source
-            soup = BeautifulSoup(html, "html.parser")
-            
+    if championship_Links == []:
+        print("PINNACLE NOT FOUND")
+        return []
 
-            for a in soup.find_all("a", href=True):
-                flex_div = a.find("div", class_=lambda x: x and "flex-row" in x)
-                if not flex_div:
-                    continue
+    # Create a queue and populate it with league links
+    queue = Queue()
+    for link_div in championship_Links:
+        queue.put(link_div)
 
-                main_href = a["href"].rstrip("/") 
+    results = []
+    threads = []
 
-                spans = flex_div.find_all("span", class_="ellipsis")
-                if len(spans) < 2:
-                    continue
+    # Start worker threads, each with a driver
+    for _ in range(3):
+        thread = threading.Thread(target=worker, args=(queue, results))
+        thread.start()
+        threads.append(thread)
 
-                team1 = preprocess_team_names(spans[0].get_text(strip=True))
-                team2 = preprocess_team_names(spans[1].get_text(strip=True))
-                matches.append(( team1, team2,main_href))
-                found = True
-            if found: 
-                iteration = 8
-            else :
-                time.sleep(1)
-                iteration+=1
-        if matches == []:
+    # Wait for all threads to finish
+    for thread in threads:
+        thread.join()
 
-            print(f"Problem with : {league}" )
 
-    # for match in matches:
-    #     print(match)
-    driver.quit()
-    return list(set(matches))
+    return results
+if __name__ == "__main__":
+    for m in get_matches_pinnacle():
+        print(m)
 
-def preprocess_team_names(name):
-    return re.sub(r'\s*\(.*?\)', '', name).lower()
+
+
+
+
+
 
 # for m in get_matches_pinnacle():
 #     print(m)
@@ -79,17 +132,25 @@ def clean_string(s):
 
 def get_all_bets_Pinnacle(common,blank):
     r = []
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    driver = webdriver.Chrome(options=chrome_options)
-
-    time.sleep(5)
+    driver= setup_driver()
     for tPinnacle in common:
         if tPinnacle!=-1:
             r.append(get_bets_pinnacle(driver,tPinnacle))  # Replace with desired team names
         else : 
             r.append(blank) 
     return r
+
+def get_all_bets_threader_Pinnacle(queue_in,queue_out,blank):
+    driver= setup_driver()
+    while True :
+        to_get = queue_in.get()
+        if to_get == 0:
+            driver.quit()
+            break 
+        elif to_get == -1:
+            queue_out.put(blank)
+        else : 
+            queue_out.put(get_bets_pinnacle(driver,to_get))
 
 def get_bets_pinnacle(driver, match):
     team1,team2,match_url = match
@@ -260,8 +321,4 @@ def format_pinnacle_Handicap(res,team1,team2):
         HDC[f"{t1}_{res[i][0]}"]=float(res[i][1])
         HDC[f"{t2}_{res[i+1][0]}"]=float(res[i+1][1])
     return HDC
-
-
-
-#print(get_odds(driver_pinnacle,('/en/soccer/england-premier-league/crystal-palace-vs-aston-villa/1604645964', 'Crystal Palace (Match)', 'Aston Villa (Match)')))
 

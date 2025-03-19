@@ -12,7 +12,7 @@ from test3 import *
 from test4 import *
 from test5 import *
 
-
+blank = {'OU':{},'WLD':{},'BTTS':{}}
 
 def treat_BTTS(sites):
     found=[]
@@ -51,9 +51,11 @@ def treat_WLD(sites):
 
 def treat_Handicap_WLD(sitesHandicap,sitesWLD):
     found = []
+    print(sitesHandicap)
+    print(sitesWLD)
     for oddsHandicap,sname1 in sitesHandicap:
         if oddsHandicap!={}:
-            print(f'{sname1} : {oddsHandicap}')
+           
             for site2,sname2 in sitesWLD: 
                 for site3,sname3 in sitesWLD: 
                     for hdTeam,winTeam in [("1_0","2"),("2_0","1")]:
@@ -110,20 +112,19 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
 
 def treat_OverUnder(sites):
     found=[]
-    print(sites)
     for site1,s1name in sites:
         for site2,s2name in sites:
             if s2name!=s1name:
                 for i in ["0.5","1.5","2.5","3.5","4.5"]:
                     try : 
                         ratio = 1/site1["O_"+i]+1/site2["U_"+i]
-                        if ratio<= 1.01:
+                        if ratio<= 1.015:
                             print(f"OU {i} ratio {ratio}")
                         if ratio<= 0.995:
                             found.append((f"{s1name}_O_{s2name}_U_{i}",ratio))
                     except : 
                         pass
-                for i in ["0.5","1","1.5","2","2.5"]:
+                for i in ["0.25","0.75","0.5","1","1.25","1.5","1.75","2","2.25","2.5","2.75"]:
                     try : 
                         ratio = 1/site1["1_+"+i]+1/site2["2_-"+i]
                         if ratio<= 1.015:
@@ -178,11 +179,6 @@ def fetch_matches(fetch_func, name, queue):
     print(f"{name} exec time : {end-start}")
 
 
-def setup_driver_binary(process_name):
-    driver_path = f'C:/Users/okoone/.cache/selenium/chromedriver/win64/134.0.6998.35/chrome_driver_{process_name}.exe'
-    return driver_path
-
-
 
 def fetch_all_bets(common, name, queue,func):   
     start = time.time()
@@ -190,9 +186,47 @@ def fetch_all_bets(common, name, queue,func):
     end = time.time()
     print(f"{name} exec time : {end-start}")
 
-blank = {'OU':{},'WLD':{},'BTTS':{}}
+
+def process_odds_to_find_arbs(sites,snames=["1xbet","188bet","Pinnacle","Ivi","Mega"]):
+    arbitrage = []
+    print("--------------------------------------------------")
+    valid_sites = [(site,sname) for site,sname in zip(sites,snames) if site!={} ]
+    
+    for type,func in [('OU',treat_OverUnder),('WLD',treat_WLD),('BTTS',treat_BTTS),('Handicap',treat_OverUnder)]:
+        vld_sites= [(site[type],sname) for site,sname in valid_sites if type in site.keys()]
+        arbitrage=arbitrage+func([(site,sname) for site,sname in vld_sites if site != {}])
+
+    sitesHandicap = [(site['Handicap'],sname) for site,sname in valid_sites if 'Handicap' in site.keys()]
+    sitesWLD=  [(site['WLD'],sname) for site,sname in valid_sites if 'WLD' in site.keys()]
+    siteWLD_Not_Empty = [(site,sname) for site,sname in sitesWLD if site != {}]
+    arbitrage=arbitrage+treat_Handicap_WLD(sitesHandicap,siteWLD_Not_Empty)
+    print("-------------------------------------------------")
+    print(arbitrage)
 
 
+def process_as_it_comes(queue,snames):
+    while True: 
+        odds = queue.get()
+        if odds ==[]:
+            break
+        else : 
+            process_odds_to_find_arbs(odds,snames)
+
+def odds_requester(commons,queues_in,queues_out,odd_processor_queue):
+    for common in commons:
+        all_odds= []
+        for site,queue in zip(list(common),queues_in):
+            queue.put(site)
+        print(common)
+        for q,queue in enumerate(queues_out) :
+            print(q)   
+            all_odds.append(queue.get())
+        odd_processor_queue.put(all_odds)
+        
+    for queue in queues_in :
+        queue.put(0)
+    odd_processor_queue.put([])
+    print('HERE')
 
 if __name__ == "__main__":
     print("Import done")
@@ -200,6 +234,7 @@ if __name__ == "__main__":
 
     common=[]
     queue = Queue()
+    snames=["1xbet","188bet","Pinnacle","Ivi","Mega"] 
     threads = [
         threading.Thread(target=fetch_matches, args=(get_matches_188, "teams188", queue)),
         threading.Thread(target=fetch_matches, args=(get_matches_pinnacle, "teamsPinnacle", queue)),
@@ -210,7 +245,6 @@ if __name__ == "__main__":
 
     for t in threads:
         t.start()
-        time.sleep(1)
 
     for t in threads:
         t.join()
@@ -227,9 +261,9 @@ if __name__ == "__main__":
 
     end = time.time()
     print(f"total exec time = {end-start1}")
-
+    
     # Example usage:
-    teams_list = [teams188, teams1xbet, teamsPinnacle,teamsIvi,teamsMega]
+    teams_list = [teams1xbet,teams188, teamsPinnacle,teamsIvi,teamsMega]
     for l in teams_list:
         print(len(l))
     tdict= [{} for _ in teams_list]
@@ -252,82 +286,33 @@ if __name__ == "__main__":
                 final_tuple[isite] = dict_team[team_key]
         if found>=2 : 
             common.append(tuple(final_tuple))
-        # else : 
-        #     print(f"Team {team_key} found in {found} lists")
 
-    # common= common[:10]
 
-    print("!!!COMMON!!!")
+    
     for c in common: 
         print(c)
     print("!!!COMMON!!!")
     start2 = time.time()
-
     
-
-    # queue = multiprocessing.Queue()  # Use a multiprocessing Queue
-
+    sfunctions=[get_all_bets_threader_1xbet,get_all_bets_threader_188,get_all_bets_threader_Pinnacle,get_all_bets_threader_Ivi,get_all_bets_threader_Mega]
+    queues_in = [Queue() for _ in snames]
+    queues_out = [Queue() for _ in snames]
     threads = [
-        threading.Thread(target=fetch_all_bets, args=([c for a,b,c,d,e in common], "betsPinnacle", queue,get_all_bets_Pinnacle)),
-        threading.Thread(target=fetch_all_bets, args=([a for a,b,c,d,e in common], "bets188", queue, get_all_bets_188)),
-        threading.Thread(target=fetch_all_bets, args=([b for a,b,c,d,e in common], "bets1x", queue,get_all_bets_1xbet)),
-        threading.Thread(target=fetch_all_bets, args=([d for a,b,c,d,e in common], "betsIvi", queue,get_all_bets_Ivi)),
-        threading.Thread(target=fetch_all_bets, args=([e for a,b,c,d,e in common], "betsMega", queue,get_all_bets_Mega)),
+        threading.Thread(target=sfunc, args=(queue_in,queue_out,blank)) for sfunc,queue_in,queue_out in zip(sfunctions,queues_in,queues_out)
     ]
-
+    odds_processer_queue= Queue()
+    threads.append(threading.Thread(target=odds_requester, args=(common,queues_in,queues_out,odds_processer_queue)))
+    threads.append(threading.Thread(target=process_as_it_comes, args=(odds_processer_queue,snames)))
     for t in threads:
         t.start()
-
     for t in threads:
         t.join()
-
-    results = {}
-    while not queue.empty():
-        results.update(queue.get())
-
-    sPinnacle = results.get("betsPinnacle")
-    s188 = results.get("bets188")
-    s1x = results.get("bets1x")
-    sIvi = results.get("betsIvi")
-    sMega = results.get("betsMega")
-            
 
     end = time.time()
     print(f"total exec time = {end-start1}")
     print(f"last part exec time = {end-start2}")
 
 
-
-    arbitrage = []
-
-    for s1x_odds,s188_odds,sPinnacle_odds,sIvi_odds,sMega_odds,common_match in zip(s1x,s188,sPinnacle,sIvi,sMega,common):
-        print("--------------------------------------------------")
-        print(common_match)
-        valid_sites = [(site,sname) for site,sname in 
-                       [(s1x_odds,"1xbet"),
-                        (s188_odds,"188bet"),
-                        (sPinnacle_odds,'Pinnacle'),
-                         (sIvi_odds,"Ivi"),
-                        (sMega_odds,"Mega")]
-                        if site!={} ]
-        
-        for type,func in [('OU',treat_OverUnder),('WLD',treat_WLD),('BTTS',treat_BTTS),('Handicap',treat_OverUnder)]:
-            arbitrage=arbitrage+func([(site[type],sname) for site,sname in valid_sites if type in site.keys()])
-    for s1x_odds,s188_odds,sPinnacle_odds,sIvi_odds,sMega_odds,common_match in zip(s1x,s188,sPinnacle,sIvi,sMega,common):
-        print("--------------------------------------------------")
-        print(common_match)
-        valid_sites = [(site,sname) for site,sname in 
-                       [(s1x_odds,"1xbet"),
-                        (s188_odds,"188bet"),
-                        (sPinnacle_odds,'Pinnacle'),
-                         (sIvi_odds,"Ivi"),
-                        (sMega_odds,"Mega")]
-                        if site!={} ]
-        sitesHandicap = [(site['Handicap'],sname) for site,sname in valid_sites if 'Handicap' in site.keys()]
-        sitesWLD=  [(site['WLD'],sname) for site,sname in valid_sites if 'WLD' in site.keys()]
-        arbitrage=arbitrage+treat_Handicap_WLD(sitesHandicap,sitesWLD)
-
-        print("-------------------------------------------------")
-    print(arbitrage)
+    
 
     
