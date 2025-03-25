@@ -4,10 +4,12 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from bs4 import BeautifulSoup
+import requests
 import time
 import re
 import threading
 from queue import Queue
+from datetime import datetime, timedelta
 # Set up Selenium with headless Chrome
 def setup_driver():
     """Set up a Selenium WebDriver instance."""
@@ -24,7 +26,68 @@ def setup_driver():
 def preprocess_team_names(name):
     return re.sub(r'\s*\(.*?\)', '', name).lower()
 
-def process_league_pinnacle(driver, link_div):
+def is_within_4_days(cutoff_str):
+    # Convertir la date du JSON en objet datetime
+    cutoff_dt = datetime.strptime(cutoff_str, "%Y-%m-%dT%H:%M:%SZ")
+    
+    # Obtenir la date actuelle en UTC
+    now = datetime.utcnow()
+    
+    # Vérifier si la date est dans moins de 4 jours
+    return now <= cutoff_dt <= now + timedelta(days=4)
+
+#https://guest.api.arcadia.pinnacle.com/0.1/leagues/{league}/matchups?brandId=0
+#https://guest.api.arcadia.pinnacle.com/0.1/sports/29/leagues?all=false&brandId=0
+def format_name(str):
+    # Convert to lowercase
+    str = str.lower()
+    # Replace non-alphanumeric characters (like " - ") with a hyphen
+    str = re.sub(r'\s*-\s*', '-', str)
+    # Replace spaces with hyphens
+    str = str.replace(" ", "-")
+    return str
+def contains_keywords(text):
+    keywords = {"draw", "over", "under","odd","even" "even", "yes", "no", "1", "0","+", "-","corners" , "bookings"}
+    return any(word.lower() in text.lower() for word in keywords)
+
+def process_league_pinnacleV2(leagueID):
+    url = f"https://guest.api.arcadia.pinnacle.com/0.1/leagues/{leagueID}/matchups?brandId=0"
+    response = requests.get(url)
+    time.sleep(0.1)
+    match = []
+    if response.status_code == 200:
+        data = response.json()
+        for m in data:
+            team1 = m["participants"][0]["name"]
+            team2 = m["participants"][1]["name"]
+            id_match = m["id"]
+            leagueName= m["league"]["name"]
+            url_match=f"/en/soccer/{format_name(leagueName)}/{format_name(team1)}-vs-{format_name(team2)}/{id_match}"
+            if not contains_keywords(team1) and is_within_4_days(m["periods"][0]["cutoffAt"]):
+                match.append((team1,team2,url_match))
+    else:
+        print(f"Error: {response.status_code}")
+    return match
+
+def get_matches_pinnacle():
+    url = "https://guest.api.arcadia.pinnacle.com/0.1/sports/29/leagues?all=false&brandId=0"
+    response = requests.get(url)
+    time.sleep(0.1)
+    match = []
+    if response.status_code == 200:
+        data = response.json()
+
+        for l in data:
+            match=match+process_league_pinnacleV2(l["id"])
+    else:
+        print(f"Error: {response.status_code}")
+    return match
+
+
+
+
+
+def process_league_pinnacleV0(driver, link_div):
     """Fetch event data from a single league page using a shared driver."""
     url = "https://www.pinnacle.bet" + link_div
     driver.get(url)
@@ -70,14 +133,14 @@ def worker(queue, results):
             break  # Stop if we get a termination signal
 
         try:
-            events = process_league_pinnacle(driver, link_div)
+            events = process_league_pinnacleV0(driver, link_div)
             results.extend(events)  # Append results safely
         except Exception as e:
             print(f"Error processing league: {e}")
         finally:
             queue.task_done()  # Mark task as completed
 
-def get_ligue_list(driver):
+def get_ligue_listV0(driver):
     try : 
         url = "https://www.pinnacle.bet/en/soccer/leagues/"
         driver.get(url)
@@ -90,18 +153,18 @@ def get_ligue_list(driver):
             driver.quit()
         else :
             print("Chanpionship pinnacle not found: retrying")
-            championship_Links = get_ligue_list(driver)
+            championship_Links = get_ligue_listV0(driver)
         return championship_Links
     except Exception as e:
         print("Error pinnacle league:", e)
         print("Retry")
-        return get_ligue_list(driver)
+        return get_ligue_listV0(driver)
 
-def get_matches_pinnacle():
+def get_matches_pinnacleV0():
     """Main function to get matches using a limited WebDriver pool."""
     driver= setup_driver()
     
-    championship_Links = get_ligue_list(driver)
+    championship_Links = get_ligue_listV0(driver)
 
     if championship_Links == []:
         print("PINNACLE NOT FOUND")
@@ -125,11 +188,10 @@ def get_matches_pinnacle():
     for thread in threads:
         thread.join()
 
-
     return results
-if __name__ == "__main__":
-    for m in get_matches_pinnacle():
-        print(m)
+# if __name__ == "__main__":
+#     for m in get_matches_pinnacle():
+#         print(m)
 
 
 

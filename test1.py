@@ -140,7 +140,8 @@ def extract_bets(page,team1,team2):
         # Scroll and search for the target team match
         scrollable_section.evaluate("element => element.scrollBy(0, -3800)")
         found = False
-        while not found:
+        iterations = 0
+        while iterations < 10:
             scrollable_section.evaluate("element => element.scrollBy(0, -3800)")
             time.sleep(0.3)
             for _ in range(10):
@@ -153,21 +154,19 @@ def extract_bets(page,team1,team2):
                     found = True
             
                 if not found:
+                    iterations+=1
                     # Scroll inside the middle section
                     scrollable_section.evaluate("element => element.scrollBy(0, 400)")
                     time.sleep(0.4)  # Allow AJAX data to load
                 else : 
+                    iterations = 10
                     break
-
-        list_of_ods = []
-        # if found:
-        #     oddsPannel=target_div.locator('[data-id="OddsPanelContainer"]').all()
-        odds_boxes = target_div.find_all("div", {"data-crt-odds-box": "true"})
-        for box in odds_boxes:
-            list_of_ods.append(extract_odds_text(box))
-        # for odd in list_of_ods : 
-        #     print(odd)
-        bets[norm_bet_type]=formatter(list_of_ods,team1,team2)
+        if found :
+            list_of_ods = []
+            odds_boxes = target_div.find_all("div", {"data-crt-odds-box": "true"})
+            for box in odds_boxes:
+                list_of_ods.append(extract_odds_text(box))
+            bets[norm_bet_type]=formatter(list_of_ods,team1,team2)
     return bets
         
 def clean_string(s):
