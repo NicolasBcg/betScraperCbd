@@ -1,6 +1,8 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 import time
 from bs4 import BeautifulSoup
 import re
@@ -11,7 +13,8 @@ from queue import Queue
 def setup_driver():
     """Set up a Selenium WebDriver instance."""
     chrome_options = Options()
-    # chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--log-level=3")
     driver = webdriver.Chrome(options=chrome_options)
     driver.set_page_load_timeout(15)
     time.sleep(5)  # Ensure we don't trigger rate limits
@@ -27,7 +30,13 @@ def process_league(driver, link_div):
     events_data = []
     
     for _ in range(10):  # Scroll multiple times to load matches
-        time.sleep(0.5)
+        try:
+            WebDriverWait(driver, 2).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "[data-test='eventLink']"))
+            )
+        except:
+            break  # Stop if no new elements are detected
+
         soup = BeautifulSoup(driver.page_source, "html.parser")
         
         event_links = soup.find_all("a", {"data-test": "eventLink"})
@@ -44,7 +53,7 @@ def process_league(driver, link_div):
                         team2 = spans[1].get_text(strip=True)
                         events_data.append((team1, team2, href))
             
-            break  # Stop scrolling if data is found
+            break  
 
     return events_data
 
@@ -120,17 +129,6 @@ if __name__ == "__main__":
 
 
 
-
-def get_all_bets_Ivi(common,blank):
-    r = []
-    driver = setup_driver()
-    for tIvi in common:
-        if tIvi!=-1:
-            r.append(get_bets_ivi(driver,tIvi))  # Replace with desired team names
-        else : 
-            r.append(blank) 
-    return r
-
 def get_all_bets_threader_Ivi(queue_in,queue_out,blank):
     driver= setup_driver()
     while True :
@@ -183,7 +181,11 @@ def get_bets_ivi(driver,match):
     return bet_dict
     
 def clean_string(s):
-    return re.sub(r'AC|FC|AS|\s|-', '', s).lower().replace(" ", "")
+    # Remove unwanted patterns
+    s= s.lower()
+    s = re.sub(r'afc|ac|fc|as|vfl|vfb|\s|fsv|tsg|rb|-|\b\d+\.\b|\d+| i | ii ', '', s)
+    # Convert to lowercase and remove spaces
+    return s.replace(" ", "")
 
 def format_ivi_1X2(res,team1,team2):
     WLD = {}

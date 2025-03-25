@@ -13,6 +13,8 @@ def setup_driver():
     """Set up a Selenium WebDriver instance."""
     chrome_options = Options()
     chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--log-level=3")
+
     chrome_options.add_argument("--disable-gpu")
     driver = webdriver.Chrome(options=chrome_options)
     driver.set_page_load_timeout(30)
@@ -124,7 +126,15 @@ def get_bets_1xbet(driver,match,blank={}):
 
 
 def clean_string(s):
-    return re.sub(r'AC|FC|AS|\s|-', '', s).lower().replace(" ", "")
+    # Remove unwanted patterns
+    s= s.lower()
+    s = re.sub(r'afc|ac|fc|as|vfl|vfb|\s|fsv|tsg|rb|-|\b\d+\.\b|\d+| i | ii ', '', s)
+    # Convert to lowercase and remove spaces
+    return s.replace(" ", "")
+
+
+
+
 def format_1xbet_1X2(res,team1,team2):
     WLD = {}
     if clean_string(team1)<=clean_string(team2):

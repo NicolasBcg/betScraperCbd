@@ -13,6 +13,8 @@ def setup_driver():
     chrome_options = Options()
     chrome_options.add_argument("--headless")  # Run in headless mode
     chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--log-level=3")
+
     chrome_options.add_argument("--window-size=700,500")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
@@ -145,9 +147,12 @@ def get_bets_mega(driver,match):
             bet_dict[bet_name]={}
     return bet_dict
     
-    
 def clean_string(s):
-    return re.sub(r'AC|FC|AS|\s|-', '', s).lower().replace(" ", "")
+    # Remove unwanted patterns
+    s= s.lower()
+    s = re.sub(r'afc|ac|fc|as|vfl|vfb|\s|fsv|tsg|rb|-|\b\d+\.\b|\d+| i | ii ', '', s)
+    # Convert to lowercase and remove spaces
+    return s.replace(" ", "")
 
 def format_mega_1X2(res,team1,team2):
     WLD = {}

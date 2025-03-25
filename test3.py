@@ -13,6 +13,8 @@ def setup_driver():
     """Set up a Selenium WebDriver instance."""
     chrome_options = Options()
     chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--log-level=3")
+
     # chrome_options.add_argument("--disable-gpu")
     driver = webdriver.Chrome(options=chrome_options)
     driver.set_page_load_timeout(30)
@@ -75,20 +77,31 @@ def worker(queue, results):
         finally:
             queue.task_done()  # Mark task as completed
 
+def get_ligue_list(driver):
+    try : 
+        url = "https://www.pinnacle.bet/en/soccer/leagues/"
+        driver.get(url)
+        # Wait for the dynamic content to load (adjust time as needed or use explicit waits)
+        time.sleep(5)
+        leagues_container = BeautifulSoup(driver.page_source, "html.parser").find("div", {"data-test-id": "Browse-Leagues"})
+        championship_Links = list(set([league_container["href"].rstrip("/") for league_container in leagues_container.find_all("a", href=True) ]))
+          # Close the initial driver
+        if championship_Links:
+            driver.quit()
+        else :
+            print("Chanpionship pinnacle not found: retrying")
+            championship_Links = get_ligue_list(driver)
+        return championship_Links
+    except Exception as e:
+        print("Error pinnacle league:", e)
+        print("Retry")
+        return get_ligue_list(driver)
 
 def get_matches_pinnacle():
     """Main function to get matches using a limited WebDriver pool."""
     driver= setup_driver()
-    url = "https://www.pinnacle.bet/en/soccer/leagues/"
-    driver.get(url)
-    # Wait for the dynamic content to load (adjust time as needed or use explicit waits)
-    time.sleep(5)
-    leagues_container = BeautifulSoup(driver.page_source, "html.parser").find("div", {"data-test-id": "Browse-Leagues"})
-
-    print("ALL OK")
-    championship_Links = list(set([league_container["href"].rstrip("/") for league_container in leagues_container.find_all("a", href=True) ]))
     
-    driver.quit()  # Close the initial driver
+    championship_Links = get_ligue_list(driver)
 
     if championship_Links == []:
         print("PINNACLE NOT FOUND")
@@ -128,7 +141,11 @@ if __name__ == "__main__":
 #     print(m)
 
 def clean_string(s):
-    return re.sub(r'AC|FC|AS|\s|-', '', s).lower().replace(" ", "")
+    # Remove unwanted patterns
+    s= s.lower()
+    s = re.sub(r'afc|ac|fc|as|vfl|vfb|\s|fsv|tsg|rb|-|\b\d+\.\b|\d+| i | ii ', '', s)
+    # Convert to lowercase and remove spaces
+    return s.replace(" ", "")
 
 def get_all_bets_Pinnacle(common,blank):
     r = []

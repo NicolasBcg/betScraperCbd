@@ -22,7 +22,7 @@ def get_matches_188():
         page.goto(url, timeout=600000)
 
         # Wait for key elements to load
-        page.wait_for_selector("#app", timeout=10000)
+        page.wait_for_selector("#app", timeout=30000)
         
         # Find the scrollable middle section
         scrollable_section = page.locator('.PageScrollWrapper')
@@ -171,19 +171,24 @@ def extract_bets(page,team1,team2):
     return bets
         
 def clean_string(s):
-    return re.sub(r'AC|FC|AS|\s|-', '', s).lower().replace(" ", "")
+    # Remove unwanted patterns
+    s= s.lower()
+    s = re.sub(r'afc|ac|fc|as|vfl|vfb|\s|fsv|tsg|rb|-|\b\d+\.\b|\d+| i | ii ', '', s)
+    # Convert to lowercase and remove spaces
+    return s.replace(" ", "")
+
 def format_188bet_1X2(res,team1,team2):
     WLD = {}
     if clean_string(team1)>clean_string(team2):
         for r in [0,1,2]:
-            if r != []:
+            if len(res)>=r+1:
                 WLD[res[r][0]]=float(res[r][1])
         for r in [3,4,5]:
-            if r != []:
+            if len(res)>=r+1:
                 WLD["1st_Half_"+res[r][0]]=float(res[r][1])
     else : 
         for r in [0,1,2]:
-            if r != []:
+            if len(res)>=r+1:
                 if r==0:
                     WLD["2"]=float(res[r][1])
                 if r==1:
@@ -192,7 +197,7 @@ def format_188bet_1X2(res,team1,team2):
                     WLD["1"]=float(res[r][1])                
 
         for r in [3,4,5]:
-            if r != []:
+            if len(res)>=r+1:
                 if r==3:
                     WLD["1st_Half_2"]=float(res[r][1])
                 if r==4:
@@ -207,7 +212,7 @@ def format_188bet_BTTS(res,team1,team2):#both team to score
         if len(res) >= 2:
             BTTS[res[r][0]]=float(res[r][1])
     for r in [2,3]:
-        if len(res) >= 2:
+        if len(res) >= 4:
             BTTS["1st_Half_"+res[r][0]]=float(res[r][1])
     return BTTS
 
