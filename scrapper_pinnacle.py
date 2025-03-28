@@ -54,6 +54,8 @@ def contains_keywords(text):
     return any(word.lower() in text.lower() for word in keywords)
 
 
+
+
 async def fetch_json(session, url):
     async with session.get(url) as response:
         if response.status == 200:
@@ -99,8 +101,10 @@ async def get_matches_pinnacle_async():
 def get_matches_pinnacle():
     return asyncio.run(get_matches_pinnacle_async())
 
-
-
+# Run the async function
+if __name__ == "__main__":
+    matches = asyncio.run(get_matches_pinnacle_async())
+    print(matches)
 
 def clean_string(s):
     # Remove unwanted patterns
@@ -132,7 +136,8 @@ def get_all_bets_threader_Pinnacle(queue_in,queue_out,blank):
             queue_out.put(get_bets_pinnacle(driver,to_get))
 
 def get_bets_pinnacle(driver, match):
-    team1,team2,base_url = match
+    team1,team2,match_url = match
+    base_url = match_url
     # ,("Both Teams To Score","BTTS",format_pinnacle_BTTS)
     url = base_url+'/#period:0'
     bet_types = [('Money Line – Match',"WLD",format_pinnacle_1X2),('Total – Match',"OU",format_pinnacle_OverUnder),('Handicap – Match',"Handicap",format_pinnacle_Handicap)]

@@ -47,7 +47,7 @@ def get_matches_mega(driver = setup_driver(),selfdriver = True):
         
         for event in event_links:
             # Get the href
-            href = event.get("href", "")
+            href = "https://megapari.com/"+event.get("href", "")
             
             # Find the div that contains the team names.
             # According to your snippet, team names are inside <div data-test="teamSeoTitles">, then within <span>
@@ -111,7 +111,7 @@ def get_bets_mega(driver,match):
     except : 
         found = False
         print(url)
-        print("https://megapari.com"+match_url)    
+        print(match_url)    
         all_match = get_matches_mega(driver=driver,selfdriver=False)
         for t1,t2,m_url in all_match:
             if clean_string(t1) == clean_string(team1) and clean_string(t2) == clean_string(team2):

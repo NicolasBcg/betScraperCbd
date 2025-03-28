@@ -15,12 +15,8 @@ import json
 def setup_driver():
     chrome_options = Options()
     chrome_options.add_argument("--headless")  # Run in headless mode
-    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--enable-unsafe-swiftshader")
     chrome_options.add_argument("--log-level=3")
-
-    chrome_options.add_argument("--window-size=700,500")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--ssl-version-max=tls1.2")
     driver = webdriver.Chrome(options=chrome_options)
     time.sleep(5)
@@ -28,9 +24,9 @@ def setup_driver():
 
 def get_matches_betsson(driver = setup_driver()):
     """Main function to get matches using a limited WebDriver pool."""
-      # Single driver for main page
+    # Single driver for main page
 
-    # Load the main page
+# Load the main page
     driver.get("https://www.betsson.com/en/sportsbook/football?tab=liveAndUpcoming")
     time.sleep(3)
 
@@ -43,38 +39,44 @@ def get_matches_betsson(driver = setup_driver()):
             
             # Click the element once it appears
             element.click()
+        try :
+            # Find all elements that represent the "Show All ..." buttons
+            show_all_buttons = WebDriverWait(driver, 10).until(
+                EC.presence_of_all_elements_located((By.XPATH, "//span[contains(text(), 'Show all')]"))
+            )
+            # Iterate through each "Show All" button and click it
+            for button in show_all_buttons:
+                button.click()
+                # print("Clicked on 'Show All' button!")
+            time.sleep(0.5)
+        except: 
+            pass
 
-        # Find all elements that represent the "Show All ..." buttons
-        show_all_buttons = WebDriverWait(driver, 10).until(
-            EC.presence_of_all_elements_located((By.XPATH, "//span[contains(text(), 'Show all')]"))
-        )
-        
-        # Iterate through each "Show All" button and click it
-        for button in show_all_buttons:
-            button.click()
-            print("Clicked on 'Show All' button!")
-        time.sleep(0.5)
         soup = BeautifulSoup(driver.page_source, "html.parser")
-        all_events = soup.findAll('a', {'test-id': 'event-row.link'})
+        all_events = soup.find_all('a', {'test-id': 'event-row.link'})
         match_links = [(a["href"],a) for a in all_events if "href" in a.attrs]
         match_links_clean = [(url,a) for url,a in match_links if '/en/sportsbook/football/efootball/' not in url]
         all_events=[]
         for link,div_match in match_links_clean:
             participant_divs = div_match.find_all('div', {'test-id': 'event-info.participant'})
             # Extract text from the span inside each div
+            
             participants = [div.find('span').text for div in participant_divs]
-            all_events.append((participants[0],participants[1],link))
+            if len(participants)==2:
+                all_events.append((participants[0],participants[1],link))
         if all_events:
             driver.quit()
         else :
-            print("Pinnacle Match not found : retrying ...")
+            print("Betsson Match not found : retrying ...")
             return get_matches_betsson(driver)
             
     except Exception as e:
-        print("Error:", e)
+        print("Error Betsson match:", e)
+        time.sleep(2)
         return get_matches_betsson(driver)
       # Close the initial driver
     return all_events
+
 
 def get_odds(driver,url):
     driver.get(url)
@@ -123,7 +125,9 @@ def get_bets_betsson(driver,match):
             bet_dict[bet_name]= formatter(all_bets[key],team1,team2)
         else :
             bet_dict[bet_name]={}
+    print(url)
     print(bet_dict)
+    # print(bet_dict)
     return bet_dict
     
 def clean_string(s):

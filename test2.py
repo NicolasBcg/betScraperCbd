@@ -48,7 +48,7 @@ def get_matches_1xbet():
             teams = [team.get_text(strip=True) for team in team_tags]
 
             if href and len(teams) == 2:
-                matches.append((teams[0], teams[1],href))        
+                matches.append((teams[0], teams[1],"https://1xbet.com"+href))        
     except:
         print(f"Not properly closed")
     try: 
@@ -84,9 +84,8 @@ def get_all_bets_1xbet(common,blank):
     return s1x
 
 def get_bets_1xbet(driver,match,blank={}):
-    team1,team2,match_url = match
+    team1,team2,url = match
 
-    url = "https://1xbet.com"+match_url
     try:
         driver.get(url)
     except:

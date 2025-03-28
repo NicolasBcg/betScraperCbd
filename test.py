@@ -10,7 +10,7 @@ import re
 from test1 import *
 from test2 import *
 from test3 import *
-from test4 import *
+from scrapper_ivi import *
 from test5 import *
 from scrapper_betsson import *
 
@@ -32,21 +32,30 @@ def treat_BTTS(sites):
                         pass
     return found
 def treat_WLD(sites):
-    found=[]
-    for bet in ["","1st_Half_"]:
-        for site1,s1name in sites:
-            for site2,s2name in sites: 
-                for site3,s3name in sites:
-                    if not (s2name==s1name and s2name==s3name):
-                        try : 
-                            ratio = 1/site1[bet+"1"]+1/site2[bet+"X"]+1/site3[bet+"2"]
-                            if ratio<= 1.02:
-                                print(f"WLD ratio {s1name}_1_{s2name}_X_{s3name}_2_{bet} {ratio} {site1[bet+"1"]}_{site2[bet+"X"]}_{site3[bet+"2"]} ")
-                            if ratio<= 0.997:
-                                found.append((f"{s1name}_1_{s2name}_X_{s3name}_2_{bet}",ratio))
+    found = []
+    all_ratios = []
+
+    for bet in ["", "1st_Half_"]:
+        for site1, s1name in sites:
+            for site2, s2name in sites: 
+                for site3, s3name in sites:
+                    if not (s2name == s1name and s2name == s3name):
+                        try:
+                            ratio = 1 / site1[bet + "1"] + 1 / site2[bet + "X"] + 1 / site3[bet + "2"]
+                            all_ratios.append(ratio)
+
+                            if ratio <= 1.02:
+                                print(f"WLD ratio {s1name}_1_{s2name}_X_{s3name}_2_{bet} {ratio:.6f} {site1[bet+'1']}_{site2[bet+'X']}_{site3[bet+'2']}")
+                            if ratio <= 0.997:
+                                found.append((f"{s1name}_1_{s2name}_X_{s3name}_2_{bet}", ratio))
                         except:
-                            # print(f"{s1name}_1_{s2name}_X_{s3name}_2_{bet}")
                             pass
+
+    if all_ratios:
+        print(f"MIN RATIO : {min(all_ratios):.6f} , {sites}")
+    else:
+        print(f"NO RATIO : {sites}")
+
     return list(set(found))
 
 def treat_Handicap_WLD(sitesHandicap,sitesWLD):
@@ -216,18 +225,17 @@ def process_as_it_comes(queue,snames):
 
 def odds_requester(commons,queues_in,queues_out,odd_processor_queue):
     for c,common in enumerate(commons):
-        print(c)
         all_odds= []
         for site,queue in zip(list(common),queues_in):
             queue.put(site)
-        for q,queue in enumerate(queues_out) :
-            print(q)   
+        print(c)
+        for queue in queues_out:   
             all_odds.append(queue.get())
         odd_processor_queue.put((common,all_odds))
         
     for queue in queues_in :
         queue.put(0)
-    odd_processor_queue.put([])
+    odd_processor_queue.put(0,[])
     print('HERE')
 
 if __name__ == "__main__":
@@ -325,11 +333,15 @@ if __name__ == "__main__":
     sfunctions=[get_all_bets_threader_1xbet,get_all_bets_threader_188,get_all_bets_threader_Pinnacle,get_all_bets_threader_Ivi,get_all_bets_threader_Mega,get_all_bets_threader_Betsson]
     queues_in = [Queue() for _ in snames]
     queues_out = [Queue() for _ in snames]
-    threads = [
-        threading.Thread(target=sfunc, args=(queue_in,queue_out,blank)) for sfunc,queue_in,queue_out in zip(sfunctions,queues_in,queues_out)
-    ]
+    queues_in2 = [Queue() for _ in snames]
+    queues_out2 = [Queue() for _ in snames]
+    threads = [threading.Thread(target=sfunc, args=(queue_in,queue_out,blank)) for sfunc,queue_in,queue_out in zip(sfunctions,queues_in,queues_out)]
+    #+[threading.Thread(target=sfunc, args=(queue_in,queue_out,blank)) for sfunc,queue_in,queue_out in zip(sfunctions,queues_in2,queues_out2)]
+
     odds_processer_queue= Queue()
+    mid = len(common) // 2
     threads.append(threading.Thread(target=odds_requester, args=(common,queues_in,queues_out,odds_processer_queue)))
+    # threads.append(threading.Thread(target=odds_requester, args=(common[mid:],queues_in2,queues_out2,odds_processer_queue)))
     threads.append(threading.Thread(target=process_as_it_comes, args=(odds_processer_queue,snames)))
     for t in threads:
         t.start()
