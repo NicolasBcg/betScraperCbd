@@ -1,30 +1,9 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.action_chains import ActionChains
-from bs4 import BeautifulSoup
 import requests
-import time
-import re
-import threading
-from queue import Queue
 from datetime import datetime, timedelta
 import aiohttp
 import asyncio
+from global_func import *
 
-# Set up Selenium with headless Chrome
-def setup_driver():
-    """Set up a Selenium WebDriver instance."""
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--log-level=3")
-
-    # chrome_options.add_argument("--disable-gpu")
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.set_page_load_timeout(30)
-    time.sleep(5)  # Ensure we don't trigger rate limits
-    return driver
 
 def preprocess_team_names(name):
     return re.sub(r'\s*\(.*?\)', '', name).lower()
@@ -34,8 +13,7 @@ def is_within_4_days(cutoff_str):
     cutoff_dt = datetime.strptime(cutoff_str, "%Y-%m-%dT%H:%M:%SZ")
     
     # Obtenir la date actuelle en UTC
-    now = datetime.utcnow()
-    
+    now = datetime.now()
     # Vérifier si la date est dans moins de 4 jours
     return now <= cutoff_dt <= now + timedelta(days=4)
 
@@ -56,16 +34,19 @@ def contains_keywords(text):
 
 
 
-async def fetch_json(session, url):
+async def fetch_json(session, url,ignore_error = False):
     async with session.get(url) as response:
         if response.status == 200:
             return await response.json()
+        elif ignore_error :
+            return {}
         else:
             print(f"Error: {response.status}")
             return None
 
 async def process_league_pinnacle(session, leagueID):
-    url = f"https://guest.api.arcadia.pinnacle.com/0.1/leagues/{leagueID}/matchups?brandId=0"
+    url = f"https://guest.api.arcadia.pinnacle.com/0.1/leagues/{leagueID}/matchups?brandId=0"#9320
+    #https://guest.api.arcadia.pinnacle.com/0.1/leagues/9320/matchups?brandId=0
     data = await fetch_json(session, url)
     
     match = []
@@ -78,7 +59,10 @@ async def process_league_pinnacle(session, leagueID):
             url_match = f"https://www.pinnacle.bet/en/soccer/{format_name(leagueName)}/{format_name(team1)}-vs-{format_name(team2)}/{id_match}"
             
             if not contains_keywords(team1) and is_within_4_days(m["periods"][0]["cutoffAt"]):
-                match.append((team1, team2, url_match))
+                resp = await fetch_json(session,f"https://guest.api.arcadia.pinnacle.com/0.1/matchups/{id_match}/markets/related/straight",ignore_error=True)
+                if resp != {}:
+                    match.append((team1, team2, url_match))
+
     
     return match
 
@@ -101,160 +85,88 @@ async def get_matches_pinnacle_async():
 def get_matches_pinnacle():
     return asyncio.run(get_matches_pinnacle_async())
 
-# Run the async function
-if __name__ == "__main__":
-    matches = asyncio.run(get_matches_pinnacle_async())
-    print(matches)
-
-def clean_string(s):
-    # Remove unwanted patterns
-    s= s.lower()
-    s = re.sub(r'afc|ac|fc|as|vfl|vfb|\s|fsv|tsg|rb|-|\b\d+\.\b|\d+| i | ii ', '', s)
-    # Convert to lowercase and remove spaces
-    return s.replace(" ", "")
-
-def get_all_bets_Pinnacle(common,blank):
-    r = []
-    driver= setup_driver()
-    for tPinnacle in common:
-        if tPinnacle!=-1:
-            r.append(get_bets_pinnacle(driver,tPinnacle))  # Replace with desired team names
-        else : 
-            r.append(blank) 
-    return r
 
 def get_all_bets_threader_Pinnacle(queue_in,queue_out,blank):
-    driver= setup_driver()
     while True :
         to_get = queue_in.get()
         if to_get == 0:
-            driver.quit()
             break 
         elif to_get == -1:
             queue_out.put(blank)
         else : 
-            queue_out.put(get_bets_pinnacle(driver,to_get))
+            queue_out.put(scrape_bets_pinnacle(to_get))
 
-def get_bets_pinnacle(driver, match):
-    team1,team2,match_url = match
-    base_url = match_url
-    # ,("Both Teams To Score","BTTS",format_pinnacle_BTTS)
-    url = base_url+'/#period:0'
-    bet_types = [('Money Line – Match',"WLD",format_pinnacle_1X2),('Total – Match',"OU",format_pinnacle_OverUnder),('Handicap – Match',"Handicap",format_pinnacle_Handicap)]
-    res = get_odds_from_page(driver,url,bet_types,team1,team2)
-    driver.get('https://www.google.com/')
-    time.sleep(0.5)
-    url = base_url+'/#period:1'
-    bet_types = [('Total – 1st Half',"OU",format_pinnacle_OverUnder),('Money Line – 1st Half',"WLD",format_pinnacle_1X2)]
-    res1half = get_odds_from_page(driver,url,bet_types,team1,team2)
-    driver.get('https://www.google.com/')
-    time.sleep(0.5)
-    url = base_url+'/#team-props'
-    bet_types = [('Both Teams To Score? 1st Half',"BTTS1F",format_pinnacle_BTTS),('Both Teams To Score?',"BTTS",format_pinnacle_BTTS)]
-    btts = get_odds_from_page(driver,url,bet_types,team1,team2)
-    for type_b in ["OU","WLD"] : 
-        for key in res1half[type_b].keys():
-            res[type_b]["1st_Half_"+key]=res1half[type_b][key]
-    try:
-        res["BTTS"]=btts["BTTS"]
-
-        for key in btts["BTTS1F"].keys():
-            res["BTTS"]["1st_Half_"+key]=btts["BTTS1F"][key]
-    except: 
-        pass
-    return res
+def format_price(american_odds: int) -> float:
+    if american_odds > 0:
+        return round((american_odds / 100) + 1, 3)
+    elif american_odds < 0:
+        return round((100 / abs(american_odds)) + 1, 3)
+    else:
+        raise ValueError("Odds cannot be zero")
+    
+def format_h_val(val):
+    if val == 0:
+        return '0'
+    if int(val) == val:
+        val = int(val)
+    if val > 0:
+        return '+'+str(val)
+    else :
+        return str(val)
 
 
-
-def get_odds_from_page(driver,url,bet_types,team1,team2):
-    result = {}
-    driver.get(url)
+def scrape_bets_pinnacle(match):
+    all_bets={}
+    """Fetch and process event data from a single league."""
+    team1,team2,url = match
+    eventId=url.split('/')[-1]
+    # print("https://ivibet.com"+url)
+    match_url = (f"https://guest.api.arcadia.pinnacle.com/0.1/matchups/{eventId}/markets/related/straight")
     # print(url)
-    # Wait for the dynamic content to load (adjust time as needed or use explicit waits)
-    bet_type,normalized_bet_type,formatfunc = bet_types[0]
-    for _ in range(10):
-        html = driver.page_source
-        # print(html)
-        soup = BeautifulSoup(html, "html.parser")
-        time.sleep(1)
-        target_div = soup.find('span', string=lambda text: text and text == bet_type )
-        try : 
-            if not target_div:
-                pass
-            # Traverse up to the parent div
-            par_div = target_div.find_parent('div')
-            if not par_div:
-                # print(f'pardiv1 Not found for bettype {bet_type}')
-                pass
-            parent_div = par_div.find_parent('div')
-            if not parent_div:
-                # print(f'pardiv2 Not found for bettype {bet_type}')
-                pass
-            parentFound=True
-        except : 
-            # print('Problem in getting parent div '+bet_type)
-            parentFound=False
-        if parentFound :    
+    # print(match_url)
+    #1605868082
+    #https://guest.api.arcadia.pinnacle.com/0.1/matchups/1606931772/markets/related/straight
+    #https://guest.api.arcadia.pinnacle.com/0.1/matchups/1605868082/markets/related/straight
+    response = requests.get(match_url)
+    if response.status_code == 200:
+        data = response.json()
+    else:
+        
+        print(f"Pinnacle Error fetching {match_url}: {response.status_code}")
+        return {}
+    if not data:
+        return {}
+    
+    teams= {"home": team1,"away":team2, "draw":"draw"}
+    markets = [(market["type"],market["prices"]) for market in data 
+               if market["period"] == 0 and market["type"] in ["moneyline","total"]]
+    
+    markets_handi = []
+    isSpread = False
+    for market in data:
+        if isSpread and market["type"]!="spread":
             break
-            
-            
-
-    for bet_type,normalized_bet_type,formatfunc in bet_types:
-        result[normalized_bet_type] = {}
-    # Find the div containing the 'Money Line – Match' text
-        target_div = soup.find('span', string=lambda text: text and text == bet_type )
-
-        try : 
-            if not target_div:
-                pass
-            # Traverse up to the parent div
-            par_div = target_div.find_parent('div')
-            if not par_div:
-                print(f'pardiv1 Not found for bettype {bet_type}')
-                pass
-            parent_div = par_div.find_parent('div')
-            if not parent_div:
-                print(f'pardiv2 Not found for bettype {bet_type}')
-                pass
-            parentFound=True
-        except : 
-            print('Problem in getting parent div '+bet_type)
-            parentFound=False
-
-        if parentFound:
-            see_more_button = None
-            see_more_div = parent_div.find('span', string=lambda text: text and 'See more' in text)
-            if see_more_div : 
-                see_more_button= see_more_div.find_parent('button')
-            if see_more_button:
-                try:
-                    # Use an XPath relative to the unique section
-                    button_xpath = f"//div[div[span[contains(text(), '{bet_type}')]]]//button[span[contains(text(), 'See more')]]"
-
-                    button_element = driver.find_element(By.XPATH, button_xpath)
-                    ActionChains(driver).move_to_element(button_element).click().perform()
-                except Exception as e:
-                    print(parent_div.prettify())
-                    # print(f"Could not click 'See more' button: {e}")
-            
-                # Refresh the page source after interaction
-                updated_html = driver.page_source
-                soup = BeautifulSoup(updated_html, 'html.parser')
-                target_div = soup.find('span', string=lambda text: text and bet_type in text)
-                parent_div = target_div.find_parent('div').find_parent('div')
+        if market["type"]=="spread":
+            isSpread = True 
+            if market["period"] == 0:
+                markets_handi.append(market["prices"])
 
 
-            # Find all buttons within that parent div
-            buttons = parent_div.find_all('button')
+    bets = {}
 
-            # Extract text from spans inside each button
-            betlist=[]
-            for button in buttons:
-                spans = button.find_all("span")
-                if len(spans) >= 2:
-                    betlist.append((spans[0].get_text(strip=True), spans[1].get_text(strip=True)))
-            result[normalized_bet_type]=formatfunc(betlist,team1,team2)
-    return result
+    bets["WLD"] = format_pinnacle_1X2([[teams[price["designation"]], format_price(price["price"])] 
+            for market, prices in markets if market == "moneyline"
+            for price in prices if "designation" in price.keys()],team1,team2)
+    bets["OU"] = format_pinnacle_OverUnder([[price["designation"],price["points"], format_price(price["price"])] 
+            for market, prices in markets if market == "total" 
+            for price in prices if float(price["points"]<6)],team1,team2)
+
+    bets["Handicap"] = format_pinnacle_Handicap([[teams[price["designation"]],format_h_val(price["points"]), format_price(price["price"])]  
+            for prices_handi in markets_handi
+            for price in prices_handi],team1,team2)
+    return bets
+
+
 
 def format_pinnacle_1X2(res,team1,team2):
     WLD = {}
@@ -267,38 +179,46 @@ def format_pinnacle_1X2(res,team1,team2):
             WLD["1"]=float(r[1])
         if preprocess_team_names(r[0])==preprocess_team_names(team2):
             WLD["2"]=float(r[1])
-        if r[0]=="Draw":
+        if r[0]=="draw":
             WLD["X"]=float(r[1])
     return WLD
 
-def format_pinnacle_BTTS(res,team1,team2):#both team to score
-    BTTS = {}
-    for r in res:
-        if r[0] == 'Yes': 
-            BTTS['Yes']=float(r[1])
-        elif r[0] == 'No':
-            BTTS['No']=float(r[1])
-    return BTTS
+# def format_pinnacle_BTTS(res,team1,team2):#both team to score
+#     BTTS = {}
+#     for r in res:
+#         if r[0] == 'Yes': 
+#             BTTS['Yes']=float(r[1])
+#         elif r[0] == 'No':
+#             BTTS['No']=float(r[1])
+#     return BTTS
 
 def format_pinnacle_OverUnder(res,team1,team2):
     OverUnders = {}
-    for key, value in res:
-        parts = key.split()
-        if "Over" in parts:
-            OverUnders[f"O_{parts[-1]}"] = float(value)
-        elif "Under" in parts:
-            OverUnders[f"U_{parts[-1]}"] = float(value)
+    for parts in res:
+        if "over" == parts[0]:
+            OverUnders[f"O_{parts[1]}"] = float(parts[-1])
+        elif "under" == parts[0]:
+            OverUnders[f"U_{parts[1]}"] = float(parts[-1])
     return OverUnders
 
 def format_pinnacle_Handicap(res,team1,team2):
     HDC = {}
-    t1="1"
-    t2="2"
     if clean_string(team1)<=clean_string(team2):
-        t1="2"
-        t2="1"
-    for i in range(0, len(res), 2):
-        HDC[f"{t1}_{res[i][0]}"]=float(res[i][1])
-        HDC[f"{t2}_{res[i+1][0]}"]=float(res[i+1][1])
+        tt=team1
+        team1=team2
+        team2=tt
+    for r in res:
+        # print(preprocess_team_names(r[0]))
+        # print(preprocess_team_names(team1))
+        if preprocess_team_names(r[0])==preprocess_team_names(team1):
+            HDC[f"1_{r[1]}"]=float(r[-1])
+        if preprocess_team_names(r[0])==preprocess_team_names(team2):
+            HDC[f"2_{r[1]}"]=float(r[-1])
+
     return HDC
 
+
+if __name__ == "__main__":
+#     # matches = asyncio.run(get_matches_pinnacle_async())
+#     # print(matches)
+    print(scrape_bets_pinnacle(('Egersunds', 'Mjondalen', 'https://www.pinnacle.bet/en/soccer/norway-1st-division/egersunds-vs-mjondalen/1606508962')))

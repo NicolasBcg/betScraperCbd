@@ -5,10 +5,7 @@ from bs4 import BeautifulSoup
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-import re
-# Set up headless Chrome
-import json
-
+from global_func import *
 # Create a new Chrome session
 #
 
@@ -125,17 +122,9 @@ def get_bets_betsson(driver,match):
             bet_dict[bet_name]= formatter(all_bets[key],team1,team2)
         else :
             bet_dict[bet_name]={}
-    print(url)
-    print(bet_dict)
+
     # print(bet_dict)
     return bet_dict
-    
-def clean_string(s):
-    # Remove unwanted patterns
-    s= s.lower()
-    s = re.sub(r'afc|ac|fc|as|vfl|vfb|\s|fsv|tsg|rb|-|\b\d+\.\b|\d+| i | ii ', '', s)
-    # Convert to lowercase and remove spaces
-    return s.replace(" ", "")
 
 
 def format_betsson_1X2(res,team1,team2):

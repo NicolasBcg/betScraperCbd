@@ -54,10 +54,12 @@ def contains_keywords(text):
     return any(word.lower() in text.lower() for word in keywords)
 
 
-async def fetch_json(session, url):
+async def fetch_json(session, url,ignore_error = False):
     async with session.get(url) as response:
         if response.status == 200:
             return await response.json()
+        elif ignore_error :
+            return {}
         else:
             print(f"Error: {response.status}")
             return None
@@ -76,7 +78,10 @@ async def process_league_pinnacle(session, leagueID):
             url_match = f"https://www.pinnacle.bet/en/soccer/{format_name(leagueName)}/{format_name(team1)}-vs-{format_name(team2)}/{id_match}"
             
             if not contains_keywords(team1) and is_within_4_days(m["periods"][0]["cutoffAt"]):
-                match.append((team1, team2, url_match))
+
+                    resp = await fetch_json(session,f"https://guest.api.arcadia.pinnacle.com/0.1/matchups/{id_match}/markets/related/straight",ignore_error=True)
+                    if resp != {}:
+                        match.append((team1, team2, url_match))
     
     return match
 

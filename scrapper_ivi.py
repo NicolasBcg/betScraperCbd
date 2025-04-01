@@ -1,17 +1,12 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
 import time
 from bs4 import BeautifulSoup
 import re
 import requests
-import threading
-from queue import Queue
 from datetime import datetime, timedelta
 # Set up headless Chrome
-
+from global_func import *
 def setup_driver():
     """Set up a Selenium WebDriver instance."""
     chrome_options = Options()
@@ -138,7 +133,10 @@ def scrape_bets_ivi(match):
     
     if data["data"]["items"][0]["oddsBooster"]:
         return {}
-    markets = [(market["id"],market) for market in data["data"].get("relations", {}).get("odds", {}).get(str(eventId)) if market["id"] in [621,289]]
+    try:
+        markets = [(market["id"],market) for market in data["data"].get("relations", {}).get("odds", {}).get(str(eventId)) if market["id"] in [621,289]]
+    except:
+        return {}
     hcp_markets =[ market for market in
                    [market for market in data["data"].get("relations", {}).get("odds", {}).get(str(eventId)) if market["id"] if market["specifiers"]]
                    if market["specifiers"].split('=')[0]=='hcp' and market["id"] in [557,1294]
@@ -204,8 +202,14 @@ def get_bets_ivi(driver,match):
                 bets = []
                 
                 for div in bets_divs:
-                    span_texts = tuple(span.get_text(strip=True) for span in div.find_all("span"))
-                    bets.append(span_texts)
+                    allspantext = [span.get_text() for span in div.find_all("span")]
+                    if allspantext != []:
+                        span_texts = [allspantext.pop(0)]
+                    else : 
+                        return {}
+                    for t in allspantext :
+                        span_texts.append(t.split(' '))
+                    bets.append(tuple(span_texts))
                 all_bets[bet_type]=bets
         if "Asian Handicap" in bet_dict.keys():
             bet_dict["Handicap"] = bet_dict["Handicap"]+bet_dict["Asian Handicap"]
@@ -221,12 +225,7 @@ def get_bets_ivi(driver,match):
             print("Couldn't get bets IVI")
         return bet_dict
     
-def clean_string(s):
-    # Remove unwanted patterns
-    s= s.lower()
-    s = re.sub(r'afc|ac|fc|as|vfl|vfb|\s|fsv|tsg|rb|-|\b\d+\.\b|\d+| i | ii ', '', s)
-    # Convert to lowercase and remove spaces
-    return s.replace(" ", "")
+
 
 def format_ivi_1X2(res,team1,team2):
     WLD = {}

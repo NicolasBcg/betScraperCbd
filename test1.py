@@ -1,13 +1,7 @@
 from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
 import time
-from itertools import product
-from itertools import combinations
-import undetected_chromedriver as uc
-import re
-  # Headless mode to run without UI
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
+from global_func import *
 
 def get_matches_188():
     url = "https://sports.sportsbook-188.com/en-gb/sports/match/today/football/main_markets?coupon=102"
@@ -169,13 +163,6 @@ def extract_bets(page,team1,team2):
             bets[norm_bet_type]=formatter(list_of_ods,team1,team2)
     return bets
         
-def clean_string(s):
-    # Remove unwanted patterns
-    s= s.lower()
-    s = re.sub(r'afc|ac|fc|as|vfl|vfb|\s|fsv|tsg|rb|-|\b\d+\.\b|\d+| i | ii ', '', s)
-    # Convert to lowercase and remove spaces
-    return s.replace(" ", "")
-
 def format_188bet_1X2(res,team1,team2):
     WLD = {}
     if clean_string(team1)>clean_string(team2):

@@ -2,13 +2,9 @@ import requests
 from bs4 import BeautifulSoup
 import time
 import undetected_chromedriver as uc
-import re
-  # Headless mode to run without UI
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-
+from global_func import *
 def setup_driver():
     """Set up a Selenium WebDriver instance."""
     chrome_options = Options()
@@ -123,13 +119,6 @@ def get_bets_1xbet(driver,match,blank={}):
 
     return bets
 
-
-def clean_string(s):
-    # Remove unwanted patterns
-    s= s.lower()
-    s = re.sub(r'afc|ac|fc|as|vfl|vfb|\s|fsv|tsg|rb|-|\b\d+\.\b|\d+| i | ii ', '', s)
-    # Convert to lowercase and remove spaces
-    return s.replace(" ", "")
 
 
 

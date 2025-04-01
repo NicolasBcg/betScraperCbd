@@ -5,11 +5,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 import time
 from bs4 import BeautifulSoup
-import re
 import threading
 from queue import Queue
 # Set up headless Chrome
-
+from global_func import *
 def setup_driver():
     """Set up a Selenium WebDriver instance."""
     chrome_options = Options()
@@ -180,12 +179,6 @@ def get_bets_ivi(driver,match):
     
     return bet_dict
     
-def clean_string(s):
-    # Remove unwanted patterns
-    s= s.lower()
-    s = re.sub(r'afc|ac|fc|as|vfl|vfb|\s|fsv|tsg|rb|-|\b\d+\.\b|\d+| i | ii ', '', s)
-    # Convert to lowercase and remove spaces
-    return s.replace(" ", "")
 
 def format_ivi_1X2(res,team1,team2):
     WLD = {}

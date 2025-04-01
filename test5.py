@@ -2,13 +2,15 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
 from bs4 import BeautifulSoup
-import re
 # Set up headless Chrome
 import json
-
+from global_func import *
 # Create a new Chrome session
-#
-# https://megapari.com/service-api/LineFeed/GetGameZip?id=250242734&lng=en&isSubGames=true&GroupEvents=true&countevents=250&grMode=4&partner=192&topGroups=&country=83&marketType=1
+
+
+# ligues : https://megapari.com/service-api/LineFeed/GetSportsShortZip?sports=1&lng=en&country=83&partner=192&virtualSports=true&gr=824&groupChamps=true
+# ligue : https://megapari.com/service-api/LineFeed/GetSportsShortZip?sports=1&champs={league_id}&lng=en&country=83&partner=192&virtualSports=true&gr=824&groupChamps=true
+# https://megapari.com/service-api/LineFeed/GetGameZip?id={event_ID}&lng=en&isSubGames=true&GroupEvents=true&countevents=250&grMode=4&partner=192&topGroups=&country=83&marketType=1
 def setup_driver():
     chrome_options = Options()
     chrome_options.add_argument("--headless")  # Run in headless mode
@@ -146,13 +148,7 @@ def get_bets_mega(driver,match):
         else :
             bet_dict[bet_name]={}
     return bet_dict
-    
-def clean_string(s):
-    # Remove unwanted patterns
-    s= s.lower()
-    s = re.sub(r'afc|ac|fc|as|vfl|vfb|\s|fsv|tsg|rb|-|\b\d+\.\b|\d+| i | ii ', '', s)
-    # Convert to lowercase and remove spaces
-    return s.replace(" ", "")
+
 
 def format_mega_1X2(res,team1,team2):
     WLD = {}

@@ -1,7 +1,5 @@
-from playwright.sync_api import sync_playwright
 import time
 from itertools import combinations
-import undetected_chromedriver as uc
 import threading
 from queue import Queue
 import pandas as pd
@@ -9,10 +7,11 @@ import pandas as pd
 import re
 from test1 import *
 from test2 import *
-from test3 import *
+from scrapper_pinnacle import *
 from scrapper_ivi import *
-from test5 import *
+from scrapper_megaparis import *
 from scrapper_betsson import *
+from global_func import *
 
 blank = {'OU':{},'WLD':{},'BTTS':{}}
 
@@ -24,9 +23,9 @@ def treat_BTTS(sites):
                 if s2name!=s1name:
                     try :
                         ratio = 1/site1[bet+"Yes"]+1/site2[bet+"No"]
-                        if ratio<= 1.02:
+                        if ratio<= 1.01:
                             print(f"YN {ratio} {s1name}_Yes_{site1[bet+"Yes"]}_{s2name}_No_{site2[bet+"No"]} ")
-                        if ratio<= 0.997:
+                        if ratio<= 0.999:
                             found.append((f"{s1name}_Yes_{site1[bet+"Yes"]}_{s2name}_No_{site2[bet+"No"]}_{bet}",ratio))
                     except: 
                         pass
@@ -44,9 +43,9 @@ def treat_WLD(sites):
                             ratio = 1 / site1[bet + "1"] + 1 / site2[bet + "X"] + 1 / site3[bet + "2"]
                             all_ratios.append(ratio)
 
-                            if ratio <= 1.02:
+                            if ratio <= 1.01:
                                 print(f"WLD ratio {s1name}_1_{s2name}_X_{s3name}_2_{bet} {ratio:.6f} {site1[bet+'1']}_{site2[bet+'X']}_{site3[bet+'2']}")
-                            if ratio <= 0.997:
+                            if ratio <= 0.999:
                                 found.append((f"{s1name}_1_{s2name}_X_{s3name}_2_{bet}", ratio))
                         except:
                             pass
@@ -73,9 +72,9 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                                 w2 = site3[winTeam]
                                 try : 
                                     ratio = (1/o1)+ (o1-1)/(o1*draw)+(1/w2)
-                                    if ratio<= 1.02:
+                                    if ratio<= 1.01:
                                         print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi0_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
-                                    if ratio<= 0.995:
+                                    if ratio<= 0.999:
                                         found.append((f"Handi WLD {sname1}_1_{sname2}_X_{sname3}_2",ratio))
                                 except :
                                     pass
@@ -90,9 +89,9 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                                 w2 = site3[winTeam]
                                 try : 
                                     ratio = (1/o1)+ (1/(2*draw))+(1/w2)
-                                    if ratio<= 1.02:
+                                    if ratio<= 1.01:
                                         print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi0_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
-                                    if ratio<= 0.995:
+                                    if ratio<= 0.999:
                                         found.append((f"{sname1}_1_{sname2}_X_{sname3}_2",ratio))
                                 except :
                                     pass
@@ -106,9 +105,9 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                                 w2 = site3[winTeam]
                                 try : 
                                     ratio = (1/o1)+ (1-(1/(2*o1)))/(draw)+(1/w2)
-                                    if ratio<= 1.02:
+                                    if ratio<= 1.01:
                                         print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi0_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
-                                    if ratio<= 0.995:
+                                    if ratio<= 0.999:
                                         found.append((f"{sname1}_1_{sname2}_X_{sname3}_2",ratio))
                                 except :
                                     pass
@@ -125,7 +124,7 @@ def treat_OverUnder(sites):
                 for i in ["0.5","1.5","2.5","3.5","4.5"]:
                     try : 
                         ratio = 1/site1["O_"+i]+1/site2["U_"+i]
-                        if ratio<= 1.02:
+                        if ratio<= 1.01:
                             print(f"OU {i} ratio {ratio}")
                         if ratio<= 0.995:
                             found.append((f"{s1name}_O_{s2name}_U_{i}",ratio))
@@ -134,17 +133,17 @@ def treat_OverUnder(sites):
                 for i in ["0.25","0.75","0.5","1","1.25","1.5","1.75","2","2.25","2.5","2.75"]:
                     try : 
                         ratio = 1/site1["1_+"+i]+1/site2["2_-"+i]
-                        if ratio<= 1.02:
+                        if ratio<= 1.01:
                             print(f"{ratio} Handicap_{s1name}_+_{s2name}_-_{i} {site1["1_+"+i]}_{site2["2_-"+i]}")
-                        if ratio<= 0.995:
+                        if ratio<= 0.999:
                             found.append((f"Handicap_{s1name}_+_{s2name}_-_{i}",ratio))
                     except : 
                         pass
                 try : 
                     ratio = 1/site1["1_0"]+1/site2["2_0"]
-                    if ratio<= 1.02:
+                    if ratio<= 1.01:
                         print(f"{ratio} Handicap_{s1name}_+_{s2name}_-_0 {site1["1_0"]} {site2["2_0"]}")
-                    if ratio<= 0.995:
+                    if ratio<= 0.999:
                         found.append((f"Handicap_{s1name}_+_{s2name}_-_{i}",ratio))
                 except : 
                     pass
@@ -176,12 +175,6 @@ def treat_HalfTime_FullTime(sites):
                             found.append((f"from {s1name}: {subset}, rest from {s2name}", inverse_sum))
     
     return found
-def clean_string(s):
-    # Remove unwanted patterns
-    s= s.lower()
-    s = re.sub(r'afc|ac|fc|as|vfl|vfb|\s|fsv|tsg|rb|-|\b\d+\.\b|\d+| i | ii ', '', s)
-    # Convert to lowercase and remove spaces
-    return s.replace(" ", "")
 
 
 def fetch_matches(fetch_func, name, queue):
@@ -216,7 +209,11 @@ def process_odds_to_find_arbs(sites,snames=["1xbet","188bet","Pinnacle","Ivi","M
 
 def process_as_it_comes(queue,snames):
     while True: 
-        common,odds = queue.get()
+        try:
+            qres=queue.get()
+            common,odds = qres
+        except Exception as e:
+            print(f"queue pb : {qres}  ERROR : {e}")
         if odds ==[]:
             break
         else : 
@@ -234,7 +231,7 @@ def odds_requester(commons,queues_in,queues_out,odd_processor_queue):
         odd_processor_queue.put((common,all_odds))
         
     for queue in queues_in :
-        queue.put(0)
+        queue.put(0,[])
     odd_processor_queue.put(0,[])
     print('HERE')
 
@@ -335,13 +332,12 @@ if __name__ == "__main__":
     queues_out = [Queue() for _ in snames]
     queues_in2 = [Queue() for _ in snames]
     queues_out2 = [Queue() for _ in snames]
-    threads = [threading.Thread(target=sfunc, args=(queue_in,queue_out,blank)) for sfunc,queue_in,queue_out in zip(sfunctions,queues_in,queues_out)]
-    #+[threading.Thread(target=sfunc, args=(queue_in,queue_out,blank)) for sfunc,queue_in,queue_out in zip(sfunctions,queues_in2,queues_out2)]
+    threads = [threading.Thread(target=sfunc, args=(queue_in,queue_out,blank)) for sfunc,queue_in,queue_out in zip(sfunctions,queues_in,queues_out)]+[threading.Thread(target=sfunc, args=(queue_in,queue_out,blank)) for sfunc,queue_in,queue_out in zip(sfunctions,queues_in2,queues_out2)]
 
     odds_processer_queue= Queue()
     mid = len(common) // 2
-    threads.append(threading.Thread(target=odds_requester, args=(common,queues_in,queues_out,odds_processer_queue)))
-    # threads.append(threading.Thread(target=odds_requester, args=(common[mid:],queues_in2,queues_out2,odds_processer_queue)))
+    threads.append(threading.Thread(target=odds_requester, args=(common[:mid],queues_in,queues_out,odds_processer_queue)))
+    threads.append(threading.Thread(target=odds_requester, args=(common[mid:],queues_in2,queues_out2,odds_processer_queue)))
     threads.append(threading.Thread(target=process_as_it_comes, args=(odds_processer_queue,snames)))
     for t in threads:
         t.start()
