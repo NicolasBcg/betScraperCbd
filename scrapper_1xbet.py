@@ -24,40 +24,42 @@ async def fetch_json(session, url, semaphore, retries=5):
                 async with session.get(url, timeout=15) as response:  # Increased timeout
                     if response.status == 200:
                         return await response.json()
-                    print(f"Error {response.status} fetching {url}")
+                    elif attempt>3:
+                        print(f"Error {response.status} fetching {url} (Retry {attempt+1}/{retries})")
                     await asyncio.sleep(2)  # Wait before retry
             except aiohttp.ClientConnectorError:
-                print(f"Connection failed: {url} (Retry {attempt+1}/{retries})")
+                if attempt>3:
+                    print(f"Connection failed: {url} (Retry {attempt+1}/{retries})")
                 await asyncio.sleep(2)  # Wait before retry
             except asyncio.TimeoutError:
-                print(f"Timeout: {url} (Retry {attempt+1}/{retries})")
+                if attempt>3:
+                    print(f"Timeout: {url} (Retry {attempt+1}/{retries})")
                 await asyncio.sleep(3)  # Wait longer before retry
     return None
 
 async def get_ligue(session, league_id, semaphore):
     """Fetches matches from a specific league asynchronously."""
-    url = f"https://megapari.com/service-api/LineFeed/GetSportsShortZip?sports=1&champs={league_id}&lng=en&country=83&partner=192&virtualSports=true&gr=824&groupChamps=true"
-    
+    url = f"https://1xbet.com/LineFeed/Get1x2_VZip?sports=1&champs={league_id}&count=50&lng=en&tf=2200000&tz=7&mode=4&country=83&getEmpty=true&gr=70"
     data = await fetch_json(session, url, semaphore)
     if not data:
         return set()
-    
     matchs = set()
-    for ligue in data.get("Value", [{}])[0].get("L", []):
-        if "G" in ligue:
-            ligue_name = ligue["L"]
-            for match in ligue["G"]:
-                match_id = match["CI"]
-                team1 = match["O1"]
-                team2 = match["O2"]
-                url_match = f"https://megapari.com/en/line/football/{league_id}-{format_name(ligue_name)}/{match_id}-{format_name(team1)}-{format_name(team2)}"
-                matchs.add((team1, team2, url_match))
-    
+    try :
+        for match in data.get("Value", [{}]):
+            ligue_name = match["L"]
+            match_id = match["CI"]
+            team1 = match["O1"]
+            team2 = match["O2"]
+            url_match = f"https://1xbet.com/en/line/football/{league_id}-{format_name(ligue_name)}/{match_id}-{format_name(team1)}-{format_name(team2)}"
+            matchs.add((team1, team2, url_match))
+    except :
+        print(f"problem processing {url}")
+        return matchs
     return matchs
 
-async def get_matches_mega_async():
+async def get_matches_1xbet_async():
     """Fetches all matches from all leagues asynchronously."""
-    url = "https://megapari.com/service-api/LineFeed/GetSportsShortZip?sports=1&lng=en&country=83&partner=192&virtualSports=true&gr=824&groupChamps=true"
+    url = "https://1xbet.com/LineFeed/GetSportsShortZip?sports=1&lng=en&tf=2200000&tz=7&country=83&virtualSports=true&gr=70&groupChamps=true"
     
     semaphore = asyncio.Semaphore(10)  # Limit concurrent requests to 10
     async with aiohttp.ClientSession() as session:
@@ -77,12 +79,12 @@ async def get_matches_mega_async():
 
     return all_matches
 
-def get_matches_mega():    
-    return asyncio.run(get_matches_mega_async())
+def get_matches_1xbet():    
+    return asyncio.run(get_matches_1xbet_async())
        
 
 
-def get_all_bets_threader_Mega(queue_in,queue_out,blank):
+def get_all_bets_threader_1xbet(queue_in,queue_out,blank):
     while True :
         to_get = queue_in.get()
         if to_get == 0:
@@ -90,9 +92,7 @@ def get_all_bets_threader_Mega(queue_in,queue_out,blank):
         elif to_get == -1:
             queue_out.put(blank)
         else : 
-            queue_out.put(scrappe_bets_mega(to_get))
-
-
+            queue_out.put(scrappe_bets_1xbet(to_get))
 def format_h_val(val):
     if int(val) == val:
         val = int(val)
@@ -100,16 +100,15 @@ def format_h_val(val):
         return '+'+str(val)
     else :
         return str(val)
-    
-def scrappe_bets_mega(match):
+def scrappe_bets_1xbet(match):
     team1,team2,match_url = match
     id_match = match_url.split('/')[-1].split('-')[0]
-    url = f'https://megapari.com/service-api/LineFeed/GetGameZip?id={id_match}&lng=en&isSubGames=true&GroupEvents=true&countevents=250&grMode=4&partner=192&topGroups=&country=83&marketType=1'
+    url = f'https://1xbet.com/LineFeed/GetGameZip?id={id_match}&lng=en&isSubGames=true&GroupEvents=true&allEventsGroupSubGames=true&countevents=250&country=83&fcountry=83&marketType=1&gr=70&isNewBuilder=true'
     response = requests.get(url)
     if response.status_code == 200:
         data = response.json()
     else:
-        print(f"Megaparis Error fetching {url}: {response.status_code}")
+        print(f"1xbet Error fetching {url}: {response.status_code}")
         return []
     try:
         allbet = data['Value']['GE']
@@ -134,7 +133,7 @@ def scrappe_bets_mega(match):
 
 
     except Exception as e:
-        print(f"MEGAPARIS : {url} // {match_url} ERROR : {e}")
+        print(f"1XBET : {url} // {match_url} ERROR : {e}")
         return {}
 
     bet_dict = {}
@@ -194,5 +193,6 @@ def format_mega_Handicap(res,team1,team2):
         elif parts in t2:
             OverUnders[f"2_{r[1]}"] = value
     return OverUnders
-# print(list(get_matches_mega())[0])
-# print(scrappe_bets_mega(('Banga Gargzdai', 'Siauliai', 'https://megapari.com/en/line/football/33371-lithuania.-a-liga/255778159-banga-gargzdai-siauliai')))
+# for m in get_matches_1xbet():
+#     print(m)
+# print(scrappe_bets_1xbet(('Lagarto', 'Uniao Atletico Carmolandense', 'https://1xbet.com/en/line/football/842973-brazil.-campeonato-brasileiro-série-d/253937821-lagarto-uniao-atletico-carmolandense')))

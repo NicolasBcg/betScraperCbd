@@ -43,6 +43,9 @@ async def process_league(session, league):
     # print(league)
     
     leagueId, leagueName = league
+    addname = ""
+    if leagueName.split('-')[-1] in ['u20','u19','u23'] :
+        addname = " "+leagueName.split('-')[-1]
     league_url = (
         f"https://platform.ivibet.com/api/event/list?period=0&competitor1Id_neq=&competitor2Id_neq=&"
         f"status_in%5B%5D=0&limit=150&main=1&relations%5B%5D=odds&relations%5B%5D=league&relations%5B%5D=result&"
@@ -55,7 +58,7 @@ async def process_league(session, league):
     if not data:
         return []
 
-    teams = {comp["id"]: comp["name"] for comp in data["data"].get("relations", {}).get("competitors", [])}
+    teams = {comp["id"]: comp["name"]+addname for comp in data["data"].get("relations", {}).get("competitors", [])}
     matchs = [
         (
             teams.get(m["competitor1Id"], "Unknown"),

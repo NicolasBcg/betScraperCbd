@@ -4,7 +4,7 @@ import time
 from global_func import *
 
 def get_matches_188():
-    url = "https://sports.sportsbook-188.com/en-gb/sports/match/today/football/main_markets?coupon=102"
+    url = "https://1brambrambei.com/en-gb/sports/match/today/football/main_markets?coupon=102"
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
@@ -78,7 +78,7 @@ def get_all_bets_threader_188(queue_in,queue_out,blank):
                 queue_out.put(get_bets_188(page,to_get))
 
 def get_bets_188(page,target_teams):
-    url = "https://sports.sportsbook-188.com/en-gb/sports/match/today/football/main_markets?coupon=102"
+    url = "https://1brambrambei.com/en-gb/sports/match/today/football/main_markets?coupon=102"
     team1,team2 = target_teams
     page.goto(url, timeout=600000)
 

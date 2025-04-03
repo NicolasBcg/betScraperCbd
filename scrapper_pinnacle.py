@@ -52,10 +52,19 @@ async def process_league_pinnacle(session, leagueID):
     match = []
     if data:
         for m in data:
-            team1 = m["participants"][0]["name"]
-            team2 = m["participants"][1]["name"]
-            id_match = m["id"]
             leagueName = m["league"]["name"]
+            spl=leagueName.split('-')
+            adds = ""
+            if 'u23' in spl:
+                adds=' u23'
+            elif 'u19' in spl : 
+                adds=' u219'
+            elif 'u20' in spl :
+                adds=' u20'
+            team1 = m["participants"][0]["name"]+adds
+            team2 = m["participants"][1]["name"]+adds
+            id_match = m["id"]
+            
             url_match = f"https://www.pinnacle.bet/en/soccer/{format_name(leagueName)}/{format_name(team1)}-vs-{format_name(team2)}/{id_match}"
             
             if not contains_keywords(team1) and is_within_4_days(m["periods"][0]["cutoffAt"]):
