@@ -24,9 +24,9 @@ def treat_BTTS(sites):
                     try :
                         ratio = 1/site1[bet+"Yes"]+1/site2[bet+"No"]
                         if ratio<= 1.007:
-                            print(f"YN {ratio} {s1name}_Yes_{site1[bet+"Yes"]}_{s2name}_No_{site2[bet+"No"]} ")
+                            print(f"YN {ratio} {s1name}_Yes_{site1[bet+'Yes']}_{s2name}_No_{site2[bet+'No']} ")
                         if ratio<= 0.999 and 0.85< ratio:
-                            found.append((f"{s1name}_Yes_{site1[bet+"Yes"]}_{s2name}_No_{site2[bet+"No"]}_{bet}",ratio))
+                            found.append((f"{s1name}_Yes_{site1[bet+'Yes']}_{s2name}_No_{site2[bet+'No']}_{bet}",ratio))
                     except: 
                         pass
     return found
@@ -135,17 +135,17 @@ def treat_OverUnder(sites):
                     try : 
                         ratio = 1/site1["1_+"+i]+1/site2["2_-"+i]
                         if ratio<= 1.007:
-                            print(f"{ratio} Handicap_{s1name}_+_{s2name}_-_{i} {site1["1_+"+i]}_{site2["2_-"+i]}")
+                            print(f"{ratio} Handicap_{s1name}_+_{s2name}_-_{i} {site1['1_+'+i]}_{site2['2_-'+i]}")
                         if ratio<= 0.999 and 0.85< ratio:
-                            found.append((f"{ratio} Handicap_{s1name}_+_{s2name}_-_{i} {site1["1_+"+i]}_{site2["2_-"+i]}",ratio))
+                            found.append((f"{ratio} Handicap_{s1name}_+_{s2name}_-_{i} {site1['1_+'+i]}_{site2['2_-'+i]}",ratio))
                     except : 
                         pass
                 try : 
                     ratio = 1/site1["1_0"]+1/site2["2_0"]
                     if ratio<= 1.007:
-                        print(f"{ratio} Handicap_{s1name}_+_{s2name}_-_0 {site1["1_0"]} {site2["2_0"]}")
+                        print(f"{ratio} Handicap_{s1name}_+_{s2name}_-_0 {site1['1_0']} {site2['2_0']}")
                     if ratio<= 0.999 and 0.85< ratio:
-                        found.append((f"{ratio} Handicap_{s1name}_+_{s2name}_-_0 {site1["1_0"]} {site2["2_0"]}",ratio))
+                        found.append((f"{ratio} Handicap_{s1name}_+_{s2name}_-_0 {site1['1_0']} {site2['2_0']}",ratio))
                 except : 
                     pass
     return found
@@ -251,7 +251,7 @@ if __name__ == "__main__":
     common=[]
     queue = Queue()
     snames=[
-            "1xbet",
+            # "1xbet",
             # "188bet",
             "Pinnacle",
             "Ivi",
@@ -259,7 +259,7 @@ if __name__ == "__main__":
             # "betsson"
             ] 
     sfunctions=[
-        get_all_bets_threader_1xbet,
+        # get_all_bets_threader_1xbet,
         # get_all_bets_threader_188,
         get_all_bets_threader_Pinnacle,
         get_all_bets_threader_Ivi,
@@ -270,7 +270,7 @@ if __name__ == "__main__":
     threads = [
         # threading.Thread(target=fetch_matches, args=(get_matches_188, "teams188", queue)),
         threading.Thread(target=fetch_matches, args=(get_matches_pinnacle, "teamsPinnacle", queue)),
-        threading.Thread(target=fetch_matches, args=(get_matches_1xbet, "teams1xbet", queue)),
+        # threading.Thread(target=fetch_matches, args=(get_matches_1xbet, "teams1xbet", queue)),
         threading.Thread(target=fetch_matches, args=(get_matches_ivi, "teamsIvi", queue)),
         # threading.Thread(target=fetch_matches, args=(get_matches_mega, "teamsMega", queue)),
         # threading.Thread(target=fetch_matches, args=(get_matches_betsson, "betsson", queue)),
@@ -288,7 +288,7 @@ if __name__ == "__main__":
 
     teamsPinnacle = results.get("teamsPinnacle")
     # teams188 = results.get("teams188")
-    teams1xbet = results.get("teams1xbet")
+    # teams1xbet = results.get("teams1xbet")
     teamsIvi = results.get("teamsIvi")
     # teamsMega = results.get("teamsMega")
     # teamsBetsson = results.get("betsson")
@@ -299,7 +299,7 @@ if __name__ == "__main__":
     
     # Example usage:
     teams_list = [
-        teams1xbet,
+        # teams1xbet,
         # teams188,
         teamsPinnacle,
         teamsIvi,
