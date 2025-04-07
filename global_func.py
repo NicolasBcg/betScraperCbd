@@ -19,7 +19,8 @@ MAPPING_MATCH = {
 TRANSFORM_MAPPING = {
     "u19":"under ages",
     "u20":"under age",
-    "u23":"und age",
+    "u21":"und age",
+    "u23":"under a",
     "milano": "milan",
     "sevilla": "seville",
     "torino": "turin",

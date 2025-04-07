@@ -4,7 +4,7 @@ import requests
 # Set up headless Chrome
 import json
 from global_func import *
-
+from datetime import datetime, timedelta
 import aiohttp
 import asyncio
 import re
@@ -36,6 +36,10 @@ async def fetch_json(session, url, semaphore, retries=5):
                     print(f"Timeout: {url} (Retry {attempt+1}/{retries})")
                 await asyncio.sleep(3)  # Wait longer before retry
     return None
+def is_within_4_days(timestamp):
+    now = datetime.now()
+    time = datetime.fromtimestamp(timestamp)
+    return abs((now - time).days) <= 4
 
 async def get_ligue(session, league_id, semaphore):
     """Fetches matches from a specific league asynchronously."""
@@ -44,17 +48,33 @@ async def get_ligue(session, league_id, semaphore):
     if not data:
         return set()
     matchs = set()
-    try :
+    # try :
+    if True:
         for match in data.get("Value", [{}]):
             ligue_name = match["L"]
+            leagueName =format_name(ligue_name)
+            spl=format_name(leagueName).split('-')
+            adds = ""
+            if 'u23' in spl:
+                adds=' u23'
+            elif 'u19' in spl : 
+                adds=' u19'
+            elif 'u20' in spl :
+                adds=' u20'
+            elif 'u21' in spl :
+                adds=' u21'
+            if 'women' in spl :
+                adds+='femmes'
             match_id = match["CI"]
-            team1 = match["O1"]
-            team2 = match["O2"]
-            url_match = f"https://1xbet.com/en/line/football/{league_id}-{format_name(ligue_name)}/{match_id}-{format_name(team1)}-{format_name(team2)}"
-            matchs.add((team1, team2, url_match))
-    except :
-        print(f"problem processing {url}")
-        return matchs
+            team1 = match["O1"]+adds
+            team2 = match["O2"]+adds
+            time = match["S"]
+            if is_within_4_days(time):
+                url_match = f"https://1xbet.com/en/line/football/{league_id}-{format_name(ligue_name)}/{match_id}-{format_name(team1)}-{format_name(team2)}"
+                matchs.add((team1, team2, url_match))
+    # except :
+    #     print(f"problem processing {url}")
+    #     return matchs
     return matchs
 
 async def get_matches_1xbet_async():
@@ -118,7 +138,7 @@ def scrappe_bets_1xbet(match):
             offset = 0
         else: 
             offset = 1
-   
+        
         all_bets["1x2"]=[bet[0]['C'] for market in allbet if market["G"] == 1 for bet in market['E']]
         # all_bets["Both teams to score"]=[('yes',allbet[3]['E'][0][0]['C']),('no',allbet[2+offset]['E'][1][0]['C'])]
         all_bets["Total"]=[(bet['T'],bet['P'],bet['C']) for market in allbet if market["G"] == 17 for bet in market['E'][0]+market['E'][1]] #Colonne,Nbbut,Cote
@@ -135,14 +155,17 @@ def scrappe_bets_1xbet(match):
     except Exception as e:
         print(f"1XBET : {url} // {match_url} ERROR : {e}")
         return {}
-
-    bet_dict = {}
-    bet_types = [('Total',"OU",format_mega_OverUnder),("1x2","WLD",format_mega_1X2),("Handicap","Handicap",format_mega_Handicap)]
-    for key,bet_name,formatter in bet_types :
-        if key in all_bets.keys():
-            bet_dict[bet_name]= formatter(all_bets[key],team1,team2)
-        else :
-            bet_dict[bet_name]={}
+    try : 
+        bet_dict = {}
+        bet_types = [('Total',"OU",format_mega_OverUnder),("1x2","WLD",format_mega_1X2),("Handicap","Handicap",format_mega_Handicap)]
+        for key,bet_name,formatter in bet_types :
+            if key in all_bets.keys():
+                bet_dict[bet_name]= formatter(all_bets[key],team1,team2)
+            else :
+                bet_dict[bet_name]={}
+    except Exception as e:
+        print(f"1XBET 2: {url} // {match_url} ERROR : {e}")
+        return {}
     return bet_dict
 
 

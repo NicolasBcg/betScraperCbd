@@ -34,15 +34,25 @@ def contains_keywords(text):
 
 
 
-async def fetch_json(session, url,ignore_error = False):
-    async with session.get(url) as response:
-        if response.status == 200:
-            return await response.json()
-        elif ignore_error :
-            return {}
-        else:
-            print(f"Error: {response.status}")
-            return None
+async def fetch_json(session, url,retries = 5):
+    for attempt in range(retries):
+        try:
+            async with session.get(url, timeout=15) as response:  # Increased timeout
+                if response.status == 200:
+                    return await response.json()
+                elif attempt>3:
+                    print(f"Error {response.status} fetching {url} (Retry {attempt+1}/{retries})")
+                if retries!=1:
+                    await asyncio.sleep(2)  # Wait before retry
+        except aiohttp.ClientConnectorError:
+            if attempt>3:
+                print(f"Connection failed: {url} (Retry {attempt+1}/{retries})")
+            await asyncio.sleep(2)  # Wait before retry
+        except asyncio.TimeoutError:
+            if attempt>3:
+                print(f"Timeout: {url} (Retry {attempt+1}/{retries})")
+            await asyncio.sleep(3)  # Wait longer before retry
+    return None
 
 async def process_league_pinnacle(session, leagueID):
     url = f"https://guest.api.arcadia.pinnacle.com/0.1/leagues/{leagueID}/matchups?brandId=0"#9320
@@ -53,26 +63,32 @@ async def process_league_pinnacle(session, leagueID):
     if data:
         for m in data:
             leagueName = m["league"]["name"]
-            spl=leagueName.split('-')
+            spl=format_name(leagueName).split('-')
             adds = ""
             if 'u23' in spl:
                 adds=' u23'
             elif 'u19' in spl : 
-                adds=' u219'
+                adds=' u19'
             elif 'u20' in spl :
                 adds=' u20'
+            elif 'u21' in spl :
+                adds=' u21'
+            if 'women' in spl :
+                adds+='femmes'
             team1 = m["participants"][0]["name"]+adds
             team2 = m["participants"][1]["name"]+adds
             id_match = m["id"]
             
             url_match = f"https://www.pinnacle.bet/en/soccer/{format_name(leagueName)}/{format_name(team1)}-vs-{format_name(team2)}/{id_match}"
-            
-            if not contains_keywords(team1) and is_within_4_days(m["periods"][0]["cutoffAt"]):
-                resp = await fetch_json(session,f"https://guest.api.arcadia.pinnacle.com/0.1/matchups/{id_match}/markets/related/straight",ignore_error=True)
-                if resp != {}:
-                    match.append((team1, team2, url_match))
-
-    
+            try :
+                a = is_within_4_days(m["startTime"])
+            except : 
+                print(f"https://guest.api.arcadia.pinnacle.com/0.1/leagues/{leagueID}/matchups?brandId=0")
+                print(m)
+            if not contains_keywords(team1) and is_within_4_days(m["startTime"]):
+                resp = await fetch_json(session,f"https://guest.api.arcadia.pinnacle.com/0.1/matchups/{id_match}/markets/related/straight",retries=1)
+                if resp != {} and resp != None:
+                    match.append((team1, team2, url_match,leagueID))
     return match
 
 async def get_matches_pinnacle_async():
@@ -123,14 +139,18 @@ def format_h_val(val):
     else :
         return str(val)
 
+async def asynchronisator(func,arg):
+    async with aiohttp.ClientSession() as session:
+        return await func(session, arg)
+    
 
 def scrape_bets_pinnacle(match):
     all_bets={}
     """Fetch and process event data from a single league."""
-    team1,team2,url = match
+    team1,team2,url,leagueID = match
     eventId=url.split('/')[-1]
     # print("https://ivibet.com"+url)
-    match_url = (f"https://guest.api.arcadia.pinnacle.com/0.1/matchups/{eventId}/markets/related/straight")
+    match_url = f"https://guest.api.arcadia.pinnacle.com/0.1/matchups/{eventId}/markets/related/straight"
     # print(url)
     # print(match_url)
     #1605868082
@@ -139,13 +159,23 @@ def scrape_bets_pinnacle(match):
     response = requests.get(match_url)
     if response.status_code == 200:
         data = response.json()
-    else:
+    elif response.status_code == 401:
         
+        league_matchs = asyncio.run(asynchronisator(process_league_pinnacle,leagueID))
+        for team1_,team2_,url_,leagueID_ in league_matchs: 
+            if team1_ == team1 :
+                # print(f'OLD URL : {match_url}')
+                # print(f'NEW URL : {url_}')    
+                return scrape_bets_pinnacle((team1_,team2_,url_,leagueID_))
+    else:
+        print(url)
         print(f"Pinnacle Error fetching {match_url}: {response.status_code}")
         return {}
-    if not data:
+    try : 
+        if not data:
+            return {}
+    except : 
         return {}
-    
     teams= {"home": team1,"away":team2, "draw":"draw"}
     markets = [(market["type"],market["prices"]) for market in data 
                if market["period"] == 0 and market["type"] in ["moneyline","total"]]
@@ -160,15 +190,25 @@ def scrape_bets_pinnacle(match):
             if market["period"] == 0:
                 markets_handi.append(market["prices"])
 
+    markets_ou = []
+    isSpread = False
+    for market in data:
+        if isSpread and market["type"]!="total":
+            break
+        if market["type"]=="total":
+            isSpread = True 
+            if market["period"] == 0:
+                markets_ou.append(market["prices"])
 
     bets = {}
 
     bets["WLD"] = format_pinnacle_1X2([[teams[price["designation"]], format_price(price["price"])] 
             for market, prices in markets if market == "moneyline"
             for price in prices if "designation" in price.keys()],team1,team2)
-    bets["OU"] = format_pinnacle_OverUnder([[price["designation"],price["points"], format_price(price["price"])] 
-            for market, prices in markets if market == "total" 
-            for price in prices if float(price["points"]<6)],team1,team2)
+    
+    bets["OU"] = format_pinnacle_OverUnder([[price["designation"],price["points"], format_price(price["price"])]
+            for prices_ou in markets_ou             
+            for price in prices_ou if float(price["points"]<6)],team1,team2)
 
     bets["Handicap"] = format_pinnacle_Handicap([[teams[price["designation"]],format_h_val(price["points"]), format_price(price["price"])]  
             for prices_handi in markets_handi

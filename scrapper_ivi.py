@@ -29,14 +29,25 @@ async def is_within_4_days(time_str):
     now = datetime.now()
     return now <= event_time <= now + timedelta(days=4)
 
-async def fetch_json(session, url):
-    """Fetch JSON response asynchronously."""
-    async with session.get(url) as response:
-        if response.status == 200:
-            return await response.json()
-        else:
-            print(f"IVI Error fetching {url}: {response.status}")
-            return None
+
+async def fetch_json(session, url,retries = 5):
+    for attempt in range(retries):
+        try:
+            async with session.get(url, timeout=15) as response:  # Increased timeout
+                if response.status == 200:
+                    return await response.json()
+                elif attempt>3:
+                    print(f"Error {response.status} fetching {url} (Retry {attempt+1}/{retries})")
+                await asyncio.sleep(2)  # Wait before retry
+        except aiohttp.ClientConnectorError:
+            if attempt>3:
+                print(f"Connection failed: {url} (Retry {attempt+1}/{retries})")
+            await asyncio.sleep(2)  # Wait before retry
+        except asyncio.TimeoutError:
+            if attempt>3:
+                print(f"Timeout: {url} (Retry {attempt+1}/{retries})")
+            await asyncio.sleep(3)  # Wait longer before retry
+    return None
 
 async def process_league(session, league):
     """Fetch and process event data from a single league."""
@@ -44,8 +55,17 @@ async def process_league(session, league):
     
     leagueId, leagueName = league
     addname = ""
-    if leagueName.split('-')[-1] in ['u20','u19','u23'] :
-        addname = " "+leagueName.split('-')[-1]
+    spl=leagueName.split('-')
+    if 'u23' in spl:
+        addname=' u23'
+    elif 'u19' in spl : 
+        addname=' u19'
+    elif 'u20' in spl :
+        addname=' u20'
+    elif 'u21' in spl :
+        addname=' u21'
+    if 'women' in spl :
+        addname+='femmes'
     league_url = (
         f"https://platform.ivibet.com/api/event/list?period=0&competitor1Id_neq=&competitor2Id_neq=&"
         f"status_in%5B%5D=0&limit=150&main=1&relations%5B%5D=odds&relations%5B%5D=league&relations%5B%5D=result&"
@@ -129,7 +149,7 @@ def scrape_bets_ivi(match):
     if response.status_code == 200:
         data = response.json()
     else:
-        print(f"IVI Error fetching {url}: {response.status}")
+        print(f"IVI Error fetching {url}: {response.status_code}")
         return {}
     if not data:
         return {}
