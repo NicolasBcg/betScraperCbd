@@ -24,9 +24,9 @@ def treat_BTTS(sites):
                     try :
                         ratio = 1/site1[bet+"Yes"]+1/site2[bet+"No"]
                         if ratio<= 1.007:
-                            print(f"YN {ratio} {s1name}_Yes_{site1[bet+"Yes"]}_{s2name}_No_{site2[bet+"No"]} ")
+                            print(f"YN {ratio} {s1name}_Yes_{site1[bet+'Yes']}_{s2name}_No_{site2[bet+'No']} ")
                         if ratio<= 0.999 and 0.85< ratio:
-                            found.append((f"{s1name}_Yes_{site1[bet+"Yes"]}_{s2name}_No_{site2[bet+"No"]}_{bet}",ratio))
+                            found.append((f"{s1name}_Yes_{site1[bet+'Yes']}_{s2name}_No_{site2[bet+'No']}_{bet}",ratio))
                     except: 
                         pass
     return found
@@ -137,17 +137,17 @@ def treat_OverUnder(sites):
                         s2ratio = 1/site2["2_-"+i]
                         ratio = s1ratio+s2ratio
                         if ratio<= 1.007:
-                            print(f"{ratio} Handicap_{s1name}_+_{s2name}_-_{i} {site1["1_+"+i]}_{site2["2_-"+i]}")
+                            print(f"{ratio} Handicap_{s1name}_+_{s2name}_-_{i} {site1['1_+'+i]}_{site2['2_-'+i]}")
                         if ratio<= 0.999 and 0.85< ratio:
-                            found.append((f"{ratio} Handicap_{s1name}_+_{s2name}_-_{i} {site1["1_+"+i]}_{site2["2_-"+i]}",ratio))
+                            found.append((f"{ratio} Handicap_{s1name}_+_{s2name}_-_{i} {site1['1_+'+i]}_{site2['2_-'+i]}",ratio))
                     except : 
                         pass
                 try : 
                     ratio = 1/site1["1_0"]+1/site2["2_0"]
                     if ratio<= 1.007:
-                        print(f"{ratio} Handicap_{s1name}_+_{s2name}_-_0 {site1["1_0"]} {site2["2_0"]}")
+                        print(f"{ratio} Handicap_{s1name}_+_{s2name}_-_0 {site1['1_0']} {site2['2_0']}")
                     if ratio<= 0.999 and 0.85< ratio:
-                        found.append((f"{ratio} Handicap_{s1name}_+_{s2name}_-_0 {site1["1_0"]} {site2["2_0"]}",ratio))
+                        found.append((f"{ratio} Handicap_{s1name}_+_{s2name}_-_0 {site1['1_0']} {site2['2_0']}",ratio))
                 except : 
                     pass
     return found
