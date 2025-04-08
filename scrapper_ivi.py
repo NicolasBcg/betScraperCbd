@@ -157,7 +157,7 @@ def scrape_bets_ivi(match):
     if data["data"]["items"][0]["oddsBooster"]:
         return {}
     try:
-        markets = [(market["id"],market) for market in data["data"].get("relations", {}).get("odds", {}).get(str(eventId)) if market["id"] in [621,289]]
+        markets = [(market["id"],market) for market in data["data"].get("relations", {}).get("odds", {}).get(str(eventId)) if market["id"] in [621,289,545]]
     except:
         return {}
     hcp_markets =[ market for market in
@@ -176,6 +176,9 @@ def scrape_bets_ivi(match):
     all_bets["621"] = [[teams[o], odds["odds"]]
                         for mId,market in markets 
                         for o, odds in enumerate(market["outcomes"]) if mId == 621]
+    all_bets["545"] = [[teams[o], odds["odds"]]
+                        for mId,market in markets 
+                        for o, odds in enumerate(market["outcomes"]) if mId == 545]
     
     teams_h = [team1,team2]
     all_bets["Handicap"] = [[teams_h[o]+" ("+format_h_val(market["specifiers"].split("=")[-1],o)+')', odds["odds"]]
@@ -183,7 +186,7 @@ def scrape_bets_ivi(match):
                         for o, odds in enumerate(market["outcomes"])]
 
 
-    bet_types = [('289',"OU",format_ivi_OverUnder),("621","WLD",format_ivi_1X2),("Handicap","Handicap",format_ivi_Handicap)]
+    bet_types = [('289',"OU",format_ivi_OverUnder),("621","WLD",format_ivi_1X2),("545","doubleChance",format_ivi_1X2_doubleChance),("Handicap","Handicap",format_ivi_Handicap)]
     bet_dict={}
     for key,bet_name,formatter in bet_types :
         if key in all_bets.keys():
@@ -192,9 +195,13 @@ def scrape_bets_ivi(match):
             bet_dict[bet_name]={}
     if bet_dict=={}:
         print("couldn't scrap bets ivi")
+    if '1_-0.0' in bet_dict["Handicap"]:
+            print(f'ERROR {match_url}')
     return bet_dict
 
 def format_h_val(val,team):
+    if val == '-0.0':
+        return '0'
     if team == 1 : 
         val = str(-float(val))
     if float(val)>0:
@@ -246,9 +253,28 @@ def get_bets_ivi(driver,match):
                 bet_dict[bet_name]={}
         if bet_dict == {}:
             print("Couldn't get bets IVI")
+
         return bet_dict
     
 
+def format_ivi_1X2_doubleChance(res,team1,team2):
+    WLD = {}
+    if clean_string(team1)<=clean_string(team2):
+        tt=team1
+        team1=team2
+        team2=tt
+    for r in res:
+        try:
+            value = max([float(x) for x in r if (isinstance(x, str) and x.replace('.', '', 1).isdigit()) or isinstance(x, float) or isinstance(x, int)])
+            if r[0]==team1:
+                WLD["1X"]=value
+            if r[0]==team2:
+                WLD["2X"]=value
+            if r[0]=="draw":
+                WLD["12"]=value
+        except : 
+            print(f'ERROR IVI 1X2 VALUE {team1},{team2}  : {r} ')
+    return WLD
 
 def format_ivi_1X2(res,team1,team2):
     WLD = {}

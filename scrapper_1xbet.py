@@ -114,6 +114,8 @@ def get_all_bets_threader_1xbet(queue_in,queue_out,blank):
         else : 
             queue_out.put(scrappe_bets_1xbet(to_get))
 def format_h_val(val):
+    if val == '-0.0':
+        return '0'
     if int(val) == val:
         val = int(val)
     if val > 0:
@@ -140,6 +142,8 @@ def scrappe_bets_1xbet(match):
             offset = 1
         
         all_bets["1x2"]=[bet[0]['C'] for market in allbet if market["G"] == 1 for bet in market['E']]
+        all_bets["doubleChance"]=[bet[0]['C'] for market in allbet if market["G"] == 8 for bet in market['E']]
+
         # all_bets["Both teams to score"]=[('yes',allbet[3]['E'][0][0]['C']),('no',allbet[2+offset]['E'][1][0]['C'])]
         all_bets["Total"]=[(bet['T'],bet['P'],bet['C']) for market in allbet if market["G"] == 17 for bet in market['E'][0]+market['E'][1]] #Colonne,Nbbut,Cote
         all_bets["Handicap"]=[]
@@ -157,7 +161,7 @@ def scrappe_bets_1xbet(match):
         return {}
     try : 
         bet_dict = {}
-        bet_types = [('Total',"OU",format_mega_OverUnder),("1x2","WLD",format_mega_1X2),("Handicap","Handicap",format_mega_Handicap)]
+        bet_types = [('Total',"OU",format_1xbet_OverUnder),("1x2","WLD",format_1xbet_1X2),("doubleChance","doubleChance",format_1xbet_1X2_doubleChance),("Handicap","Handicap",format_1xbet_Handicap)]
         for key,bet_name,formatter in bet_types :
             if key in all_bets.keys():
                 bet_dict[bet_name]= formatter(all_bets[key],team1,team2)
@@ -169,7 +173,7 @@ def scrappe_bets_1xbet(match):
     return bet_dict
 
 
-def format_mega_1X2(res,team1,team2):
+def format_1xbet_1X2(res,team1,team2):
     WLD = {}
     if clean_string(team1)<=clean_string(team2):
         WLD["1"]=res[2]
@@ -180,7 +184,19 @@ def format_mega_1X2(res,team1,team2):
     WLD["X"]=res[1]
     return WLD
 
-def format_mega_BTTS(res,team1,team2):#both team to score
+def format_1xbet_1X2_doubleChance(res,team1,team2):
+    WLD = {}
+    if clean_string(team1)<=clean_string(team2):
+        WLD["1X"]=res[2]
+        WLD["2X"]=res[0]
+        WLD["12"]=res[1]
+    else:
+        WLD["1X"]=res[0]
+        WLD["2X"]=res[2]
+        WLD["12"]=res[1]
+    return WLD
+
+def format_1xbet_BTTS(res,team1,team2):#both team to score
     BTTS = {}
     for r in res:
         value = float(r[1])
@@ -190,7 +206,7 @@ def format_mega_BTTS(res,team1,team2):#both team to score
             BTTS['No']=value
     return BTTS
 
-def format_mega_OverUnder(res,team1,team2):
+def format_1xbet_OverUnder(res,team1,team2):
     OverUnders = {}
     for r in res:
         value = float(r[2])
@@ -201,7 +217,7 @@ def format_mega_OverUnder(res,team1,team2):
             OverUnders[f"U_{r[1]}"] = value
     return OverUnders
 
-def format_mega_Handicap(res,team1,team2):
+def format_1xbet_Handicap(res,team1,team2):
     OverUnders = {}
     t1=[7,3829]
     t2=[8,3830]
