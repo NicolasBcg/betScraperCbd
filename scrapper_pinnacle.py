@@ -130,6 +130,8 @@ def format_price(american_odds: int) -> float:
         raise ValueError("Odds cannot be zero")
     
 def format_h_val(val):
+    if val == '-0.0':
+        return '0'
     if val == 0:
         return '0'
     if int(val) == val:
@@ -213,8 +215,12 @@ def scrape_bets_pinnacle(match):
     bets["Handicap"] = format_pinnacle_Handicap([[teams[price["designation"]],format_h_val(price["points"]), format_price(price["price"])]  
             for prices_handi in markets_handi
             for price in prices_handi],team1,team2)
+    bets["doubleChance"]={}
+    for bet,translation in [("1_+0.5","1X"),("2_+0.5","2X")]:
+        if bet in bets["Handicap"].keys():
+            bets["doubleChance"][translation]=bets["Handicap"][bet]
     return bets
-
+    
 
 
 def format_pinnacle_1X2(res,team1,team2):
