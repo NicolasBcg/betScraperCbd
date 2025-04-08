@@ -195,15 +195,15 @@ def scrape_bets_ivi(match):
             bet_dict[bet_name]={}
     if bet_dict=={}:
         print("couldn't scrap bets ivi")
-    if '1_-0.0' in bet_dict["Handicap"]:
-            print(f'ERROR {match_url}')
     return bet_dict
 
 def format_h_val(val,team):
-    if val == '-0.0':
-        return '0'
+    if float(val) == int(float(val)):   
+        val_type = int
+    else :
+        val_type = float
     if team == 1 : 
-        val = str(-float(val))
+        val = str(-val_type(val))
     if float(val)>0:
         return '+'+val
     else : 

@@ -103,23 +103,23 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
            
             for site2,sname2 in sitesWLD: 
                 for site3,sname3 in sitesWLD: 
-                    for hdTeam,winTeam in Handicap_WLD_Configs[0]['bet1_bet2_list']:
-                        if not (sname2==sname1 and sname2==sname3):
-                                try:
-                                    o1,o2,o3 = oddsHandicap[hdTeam],site2["X"],site3[winTeam]
-                                except : 
-                                    print(sname1)
-                                    print(oddsHandicap)
-                                s1,s2,s3 = 1/o1, Handicap_WLD_Configs[0]['stake2'](o1,o2), 1/o3
-                                ratio = s1+ s2+s3
-                                stake1,stake2,stake3 = round (s1*200, 0),round (s2*200, 0),round (s3*200, 0)
-                                minGain = Handicap_WLD_Configs[0]['gain'](o1,o2,o3,stake1,stake2,stake3)
-                                if ratio<= 1.005:
-                                    print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
-                                if (minGain >= 1.000 or ratio<= 0.996)  and ratio>= 0.75:
-                                    found.append((f"Handi {sname1}:{hdTeam}:{o1} {sname2}:X:{draw} {sname3}:{winTeam}:{w2} {ratio:.6f}  \n"
-                                            f"Bet {sname1}:{hdTeam}:{stake1} {sname2}:X:{stake2} {sname3}:{winTeam}:{stake3} min gain {minGain}\n"
-                                            , ratio))
+                    # for hdTeam,winTeam in Handicap_WLD_Configs[0]['bet1_bet2_list']:
+                    #     if not (sname2==sname1 and sname2==sname3):
+                    #             try:
+                    #                 o1,o2,o3 = oddsHandicap[hdTeam],site2["X"],site3[winTeam]
+                    #             except : 
+                    #                 print(sname1)
+                    #                 print(oddsHandicap)
+                    #             s1,s2,s3 = 1/o1, Handicap_WLD_Configs[0]['stake2'](o1,o2), 1/o3
+                    #             ratio = s1+ s2+s3
+                    #             stake1,stake2,stake3 = round (s1*200, 0),round (s2*200, 0),round (s3*200, 0)
+                    #             minGain = Handicap_WLD_Configs[0]['gain'](o1,o2,o3,stake1,stake2,stake3)
+                    #             if ratio<= 1.005:
+                    #                 print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
+                    #             if (minGain >= 1.000 or ratio<= 0.996)  and ratio>= 0.75:
+                    #                 found.append((f"Handi {sname1}:{hdTeam}:{o1} {sname2}:X:{draw} {sname3}:{winTeam}:{w2} {ratio:.6f}  \n"
+                    #                         f"Bet {sname1}:{hdTeam}:{stake1} {sname2}:X:{stake2} {sname3}:{winTeam}:{stake3} min gain {minGain}\n"
+                    #                         , ratio))
                             
 
 
@@ -295,16 +295,23 @@ def process_odds_to_find_arbs(sites,snames=["1xbet","188bet","Pinnacle","Ivi","M
     # print("--------------------------------------------------")
     valid_sites = [(site,sname) for site,sname in zip(sites,snames) if site!={} ]
     
-    for type,func in [('OU',treat_OverUnder),('WLD',treat_WLD),('BTTS',treat_BTTS),('Handicap',treat_OverUnder)]:
-        vld_sites= [(site[type],sname) for site,sname in valid_sites if type in site.keys()]
-        arbitrage=arbitrage+func([(site,sname) for site,sname in vld_sites if site != {}])
+    for types,func in [('OU',treat_OverUnder),('WLD',treat_WLD),('BTTS',treat_BTTS),('Handicap',treat_OverUnder)]:
+        try : 
+            vld_sites= [(site[types],sname) for site,sname in valid_sites if types in site.keys()]
+            arbitrage=arbitrage+func([(site,sname) for site,sname in vld_sites if site != {}])
+        except : 
+            for valid_site in valid_sites:
+                print(valid_site)
+        
+    try : 
+        sitesHandicap = [(site['Handicap'],sname) for site,sname in valid_sites if 'Handicap' in site.keys()]
+        sitesWLD=  [(site['WLD'],sname) for site,sname in valid_sites if 'WLD' in site.keys()]
+        sitesDoubleChance = [(site['doubleChance'],sname) for site,sname in valid_sites if 'doubleChance' in site.keys()]
 
-    sitesHandicap = [(site['Handicap'],sname) for site,sname in valid_sites if 'Handicap' in site.keys()]
-    sitesWLD=  [(site['WLD'],sname) for site,sname in valid_sites if 'WLD' in site.keys()]
-    sitesDoubleChance = [(site['doubleChance'],sname) for site,sname in valid_sites if 'doubleChance' in site.keys()]
-
-    siteWLD_Not_Empty = [(site,sname) for site,sname in sitesWLD if site != {}]
-    arbitrage=arbitrage+treat_Handicap_WLD(sitesHandicap,siteWLD_Not_Empty)
+        siteWLD_Not_Empty = [(site,sname) for site,sname in sitesWLD if site != {}]
+        arbitrage=arbitrage+treat_Handicap_WLD(sitesHandicap,siteWLD_Not_Empty)
+    except :
+        pass
     # print("-------------------------------------------------")
     # print(arbitrage)
     return arbitrage

@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import aiohttp
 import asyncio
 import re
-
+import traceback
 # Precompile regex for efficiency
 format_regex = re.compile(r'\s*-\s*')
 
@@ -131,7 +131,7 @@ def scrappe_bets_1xbet(match):
         data = response.json()
     else:
         print(f"1xbet Error fetching {url}: {response.status_code}")
-        return []
+        return {}
     try:
         allbet = data['Value']['GE']
         all_bets={}  
@@ -169,31 +169,34 @@ def scrappe_bets_1xbet(match):
                 bet_dict[bet_name]={}
     except Exception as e:
         print(f"1XBET 2: {url} // {match_url} ERROR : {e}")
+        traceback.print_exc()
         return {}
     return bet_dict
 
 
 def format_1xbet_1X2(res,team1,team2):
     WLD = {}
-    if clean_string(team1)<=clean_string(team2):
-        WLD["1"]=res[2]
-        WLD["2"]=res[0]
-    else:
-        WLD["1"]=res[0]
-        WLD["2"]=res[2]
-    WLD["X"]=res[1]
+    if len(res) == 3:
+        if clean_string(team1)<=clean_string(team2):
+            WLD["1"]=res[2]
+            WLD["2"]=res[0]
+        else:
+            WLD["1"]=res[0]
+            WLD["2"]=res[2]
+        WLD["X"]=res[1]
     return WLD
 
 def format_1xbet_1X2_doubleChance(res,team1,team2):
     WLD = {}
-    if clean_string(team1)<=clean_string(team2):
-        WLD["1X"]=res[2]
-        WLD["2X"]=res[0]
-        WLD["12"]=res[1]
-    else:
-        WLD["1X"]=res[0]
-        WLD["2X"]=res[2]
-        WLD["12"]=res[1]
+    if len(res) == 3:
+        if clean_string(team1)<=clean_string(team2):
+            WLD["1X"]=res[2]
+            WLD["2X"]=res[0]
+            WLD["12"]=res[1]
+        else:
+            WLD["1X"]=res[0]
+            WLD["2X"]=res[2]
+            WLD["12"]=res[1]
     return WLD
 
 def format_1xbet_BTTS(res,team1,team2):#both team to score

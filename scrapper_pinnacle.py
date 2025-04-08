@@ -128,10 +128,18 @@ def format_price(american_odds: int) -> float:
         return round((100 / abs(american_odds)) + 1, 3)
     else:
         raise ValueError("Odds cannot be zero")
-    
+def format_h_val(val,team):
+    if float(val) == int(float(val)):   
+        val_type = int
+    else :
+        val_type = float
+    if team == 1 : 
+        val = str(-val_type(val))
+    if float(val)>0:
+        return '+'+val
+    else : 
+        return val
 def format_h_val(val):
-    if val == '-0.0':
-        return '0'
     if val == 0:
         return '0'
     if int(val) == val:
@@ -218,7 +226,10 @@ def scrape_bets_pinnacle(match):
     bets["doubleChance"]={}
     for bet,translation in [("1_+0.5","1X"),("2_+0.5","2X")]:
         if bet in bets["Handicap"].keys():
-            bets["doubleChance"][translation]=bets["Handicap"][bet]
+            bets["doubleChance"][translation]=bets["Handicap"][bet]         
+
+    if '2_-0.0' in bets["Handicap"]:
+        print(f'ERROR 1_-0.0 {match_url}')
     return bets
     
 
