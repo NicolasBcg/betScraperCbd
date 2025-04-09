@@ -41,16 +41,16 @@ async def fetch_json(session, url,retries = 5):
                 if response.status == 200:
                     return await response.json()
                 elif attempt>3:
-                    print(f"Error {response.status} fetching {url} (Retry {attempt+1}/{retries})")
+                    logwrite(f"Error {response.status} fetching {url} (Retry {attempt+1}/{retries})","CONNECTION_ERROR")
                 if retries!=1:
                     await asyncio.sleep(random.uniform(2, 4))  # Wait before retry
         except aiohttp.ClientConnectorError:
             if attempt>3:
-                print(f"Connection failed: {url} (Retry {attempt+1}/{retries})")
+                logwrite(f"Connection failed: {url} (Retry {attempt+1}/{retries})","CONNECTION_ERROR")
             await asyncio.sleep(random.uniform(2, 4))  # Wait before retry
         except asyncio.TimeoutError:
             if attempt>3:
-                print(f"Timeout: {url} (Retry {attempt+1}/{retries})")
+                logwrite(f"Timeout: {url} (Retry {attempt+1}/{retries})","CONNECTION_ERROR")
             await asyncio.sleep(random.uniform(2, 4))  # Wait longer before retry
     return None
 
@@ -80,11 +80,7 @@ async def process_league_pinnacle(session, leagueID):
             id_match = m["id"]
             
             url_match = f"https://www.pinnacle.bet/en/soccer/{format_name(leagueName)}/{format_name(team1)}-vs-{format_name(team2)}/{id_match}"
-            try :
-                a = is_within_4_days(m["startTime"])
-            except : 
-                print(f"https://guest.api.arcadia.pinnacle.com/0.1/leagues/{leagueID}/matchups?brandId=0")
-                print(m)
+
             if not contains_keywords(team1) and is_within_4_days(m["startTime"]):
                 resp = await fetch_json(session,f"https://guest.api.arcadia.pinnacle.com/0.1/matchups/{id_match}/markets/related/straight",retries=1)
                 if resp != {} and resp != None:
@@ -186,15 +182,15 @@ def scrape_bets_pinnacle(match):
                 
             
     else:
-        print(url)
-        print(f"Pinnacle Error fetching {match_url}: {response.status_code}")
+        logwrite(url,"CONNECTION_ERROR")
+        logwrite(f"Pinnacle Error fetching {match_url}: {response.status_code}",    "CONNECTION_ERROR")
         return {}
     try : 
         if not data:
-            print(f"Pinnacle No data from {match_url}: {response.status_code}")
+            logwrite(f"Pinnacle No data from {match_url}: {response.status_code}","CONNECTION_ERROR")
             return {}
     except : 
-        print(f"Pinnacle Error fetching data from {match_url}: {response.status_code}")
+        logwrite(f"Pinnacle Error fetching data from {match_url}: {response.status_code}","CONNECTION_ERROR")
         return {}
     teams= {"home": team1,"away":team2, "draw":"draw"}
     markets = [(market["type"],market["prices"]) for market in data 
@@ -239,7 +235,7 @@ def scrape_bets_pinnacle(match):
             bets["doubleChance"][translation]=bets["Handicap"][bet]         
 
     if bets["WLD"]  == {} :
-        print(f'ERROR {url} /// {match_url}')
+        logwrite(f'ERROR {url} /// {match_url}',"CONNECTION_ERROR")
     return bets
     
 

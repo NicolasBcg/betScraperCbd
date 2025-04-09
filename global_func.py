@@ -1,7 +1,11 @@
 import re
 from unidecode import unidecode
-
-
+DISPLAY_CONNECTION_ERROR = False
+def logwrite(message,display_type=""):
+    if display_type == "CONNECTION_ERROR" and DISPLAY_CONNECTION_ERROR:
+        print(message)
+    if display_type == "":
+        print(message)
 MAPPING_MATCH = {
     "man city": "manchester city",
     "manchester united": "man utd",

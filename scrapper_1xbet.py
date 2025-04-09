@@ -25,15 +25,15 @@ async def fetch_json(session, url, semaphore, retries=5):
                     if response.status == 200:
                         return await response.json()
                     elif attempt>3:
-                        print(f"Error {response.status} fetching {url} (Retry {attempt+1}/{retries})")
+                        logwrite(f"Error {response.status} fetching {url} (Retry {attempt+1}/{retries})", display_type="CONNECTION_ERROR")
                     await asyncio.sleep(2)  # Wait before retry
             except aiohttp.ClientConnectorError:
                 if attempt>3:
-                    print(f"Connection failed: {url} (Retry {attempt+1}/{retries})")
+                    logwrite(f"Connection failed: {url} (Retry {attempt+1}/{retries})", display_type="CONNECTION_ERROR")
                 await asyncio.sleep(2)  # Wait before retry
             except asyncio.TimeoutError:
                 if attempt>3:
-                    print(f"Timeout: {url} (Retry {attempt+1}/{retries})")
+                    logwrite(f"Timeout: {url} (Retry {attempt+1}/{retries})", display_type="CONNECTION_ERROR")
                 await asyncio.sleep(3)  # Wait longer before retry
     return None
 def is_within_4_days(timestamp):
@@ -130,7 +130,7 @@ def scrappe_bets_1xbet(match):
     if response.status_code == 200:
         data = response.json()
     else:
-        print(f"1xbet Error fetching {url}: {response.status_code}")
+        logwrite(f"1xbet Error fetching {url}: {response.status_code}", display_type="CONNECTION_ERROR")
         return {}
     try:
         allbet = data['Value']['GE']
@@ -157,7 +157,7 @@ def scrappe_bets_1xbet(match):
 
 
     except Exception as e:
-        print(f"1XBET : {url} // {match_url} ERROR : {e}")
+        logwrite(f"1XBET : {url} // {match_url} ERROR : {e}", display_type="CONNECTION_ERROR")
         return {}
     try : 
         bet_dict = {}
@@ -168,7 +168,7 @@ def scrappe_bets_1xbet(match):
             else :
                 bet_dict[bet_name]={}
     except Exception as e:
-        print(f"1XBET 2: {url} // {match_url} ERROR : {e}")
+        logwrite(f"1XBET 2: {url} // {match_url} ERROR : {e}", display_type="CONNECTION_ERROR")
         traceback.print_exc()
         return {}
     return bet_dict

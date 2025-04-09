@@ -5,12 +5,12 @@ from queue import Queue
 import pandas as pd
   # Headless mode to run without UI
 import re
-from test1 import *
+# from test1 import *
 from scrapper_1xbet import *
 from scrapper_pinnacle import *
 from scrapper_ivi import *
-from scrapper_megaparis import *
-from scrapper_betsson import *
+# from scrapper_megaparis import *
+# from scrapper_betsson import *
 from global_func import *
 
 blank = {'OU':{},'WLD':{},'BTTS':{}}
@@ -387,7 +387,7 @@ if __name__ == "__main__":
                 "1xbet",
                 # "188bet",
                 "Pinnacle",
-                # "Ivi",
+                "Ivi",
                 # "Mega",
                 # "betsson"
                 ] 
@@ -395,7 +395,7 @@ if __name__ == "__main__":
             get_all_bets_threader_1xbet,
             # get_all_bets_threader_188,
             get_all_bets_threader_Pinnacle,
-            # get_all_bets_threader_Ivi,
+            get_all_bets_threader_Ivi,
             # get_all_bets_threader_Mega,
             # get_all_bets_threader_Betsson
             ]
@@ -404,7 +404,7 @@ if __name__ == "__main__":
             # threading.Thread(target=fetch_matches, args=(get_matches_188, "teams188", queue)),
             threading.Thread(target=fetch_matches, args=(get_matches_pinnacle, "teamsPinnacle", queue)),
             threading.Thread(target=fetch_matches, args=(get_matches_1xbet, "teams1xbet", queue)),
-            # threading.Thread(target=fetch_matches, args=(get_matches_ivi, "teamsIvi", queue)),
+            threading.Thread(target=fetch_matches, args=(get_matches_ivi, "teamsIvi", queue)),
             # threading.Thread(target=fetch_matches, args=(get_matches_mega, "teamsMega", queue)),
             # threading.Thread(target=fetch_matches, args=(get_matches_betsson, "betsson", queue)),
         ]
@@ -422,7 +422,7 @@ if __name__ == "__main__":
         teamsPinnacle = results.get("teamsPinnacle")
         # teams188 = results.get("teams188")
         teams1xbet = results.get("teams1xbet")
-        # teamsIvi = results.get("teamsIvi")
+        teamsIvi = results.get("teamsIvi")
         # teamsMega = results.get("teamsMega")
         # teamsBetsson = results.get("betsson")
 
@@ -435,7 +435,7 @@ if __name__ == "__main__":
             teams1xbet,
             # teams188,
             teamsPinnacle,
-            # teamsIvi,
+            teamsIvi,
             # teamsMega,
             # teamsBetsson
             ]
