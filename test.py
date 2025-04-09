@@ -43,7 +43,7 @@ def treat_WLD_DoubleChance(sitesWLD,sitesDoubleChance):
                         ratio = s2+ s1
                         stake1,stake2 = round (s1*200, 0),round (s2*200, 0)
                         minGain = min(stake1*o1, stake2*o2)/(stake1+stake2)
-                        if ratio<= 1.02:
+                        if ratio<= 1.005:
                                 print(f"DoubleChance {sname1}:{s1bet}:{o1} {sname2}:{s2bet}:{o2} {ratio:.6f}")
                         if (minGain >= 1.000 or ratio<= 0.996)  and ratio>= 0.75:
                             found.append((f"DoubleChance {sname1}:{s1bet}:{o1} {sname2}:{s2bet}:{o2} {ratio:.6f}  \n"
@@ -384,7 +384,7 @@ if __name__ == "__main__":
         common=[]
         queue = Queue()
         snames=[
-                "1xbet",
+                # "1xbet",
                 # "188bet",
                 "Pinnacle",
                 "Ivi",
@@ -392,7 +392,7 @@ if __name__ == "__main__":
                 # "betsson"
                 ] 
         sfunctions=[
-            get_all_bets_threader_1xbet,
+            # get_all_bets_threader_1xbet,
             # get_all_bets_threader_188,
             get_all_bets_threader_Pinnacle,
             get_all_bets_threader_Ivi,
@@ -403,7 +403,7 @@ if __name__ == "__main__":
         threads = [
             # threading.Thread(target=fetch_matches, args=(get_matches_188, "teams188", queue)),
             threading.Thread(target=fetch_matches, args=(get_matches_pinnacle, "teamsPinnacle", queue)),
-            threading.Thread(target=fetch_matches, args=(get_matches_1xbet, "teams1xbet", queue)),
+            # threading.Thread(target=fetch_matches, args=(get_matches_1xbet, "teams1xbet", queue)),
             threading.Thread(target=fetch_matches, args=(get_matches_ivi, "teamsIvi", queue)),
             # threading.Thread(target=fetch_matches, args=(get_matches_mega, "teamsMega", queue)),
             # threading.Thread(target=fetch_matches, args=(get_matches_betsson, "betsson", queue)),
@@ -421,7 +421,7 @@ if __name__ == "__main__":
 
         teamsPinnacle = results.get("teamsPinnacle")
         # teams188 = results.get("teams188")
-        teams1xbet = results.get("teams1xbet")
+        # teams1xbet = results.get("teams1xbet")
         teamsIvi = results.get("teamsIvi")
         # teamsMega = results.get("teamsMega")
         # teamsBetsson = results.get("betsson")
@@ -432,7 +432,7 @@ if __name__ == "__main__":
         
         # Example usage:
         teams_list = [
-            teams1xbet,
+            # teams1xbet,
             # teams188,
             teamsPinnacle,
             teamsIvi,
@@ -497,12 +497,16 @@ if __name__ == "__main__":
         queues_out = [Queue() for _ in snames]
         queues_in2 = [Queue() for _ in snames]
         queues_out2 = [Queue() for _ in snames]
-        threads = [threading.Thread(target=sfunc, args=(queue_in,queue_out,blank)) for sfunc,queue_in,queue_out in zip(sfunctions,queues_in,queues_out)]+[threading.Thread(target=sfunc, args=(queue_in,queue_out,blank)) for sfunc,queue_in,queue_out in zip(sfunctions,queues_in2,queues_out2)]
+        queues_in3 = [Queue() for _ in snames]
+        queues_out3 = [Queue() for _ in snames]
 
+        threads = [threading.Thread(target=sfunc, args=(queue_in,queue_out,blank)) for sfunc,queue_in,queue_out in zip(sfunctions,queues_in,queues_out)]+[threading.Thread(target=sfunc, args=(queue_in,queue_out,blank)) for sfunc,queue_in,queue_out in zip(sfunctions,queues_in2,queues_out2)]
+        threads = threads+[threading.Thread(target=sfunc, args=(queue_in,queue_out,blank)) for sfunc,queue_in,queue_out in zip(sfunctions,queues_in3,queues_out3)]
         odds_processer_queue= Queue()
-        mid = len(common) // 2
+        mid = len(common) // 3
         threads.append(threading.Thread(target=odds_requester, args=(common[:mid],queues_in,queues_out,odds_processer_queue)))
-        threads.append(threading.Thread(target=odds_requester, args=(common[mid:],queues_in2,queues_out2,odds_processer_queue)))
+        threads.append(threading.Thread(target=odds_requester, args=(common[mid:2*mid],queues_in2,queues_out2,odds_processer_queue)))
+        threads.append(threading.Thread(target=odds_requester, args=(common[2*mid:],queues_in3,queues_out3,odds_processer_queue)))
         threads.append(threading.Thread(target=process_as_it_comes, args=(odds_processer_queue,snames)))
         for t in threads:
             t.start()

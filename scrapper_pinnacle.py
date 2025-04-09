@@ -15,7 +15,7 @@ def is_within_4_days(cutoff_str):
     # Obtenir la date actuelle en UTC
     now = datetime.now()
     # Vérifier si la date est dans moins de 4 jours
-    return now <= cutoff_dt <= now + timedelta(days=4)
+    return now <= cutoff_dt <= now + timedelta(days=2)
 
 #https://guest.api.arcadia.pinnacle.com/0.1/leagues/{league}/matchups?brandId=0
 #https://guest.api.arcadia.pinnacle.com/0.1/sports/29/leagues?all=false&brandId=0

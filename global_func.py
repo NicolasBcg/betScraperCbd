@@ -17,7 +17,9 @@ MAPPING_MATCH = {
     "juventus": "juve",
     "spurs": "tottenham",
     "olympique de marseille": "marseille",
-    "olympique lyonnais": "lyon"
+    "olympique lyonnais": "lyon",
+    "olympique lyon": "lyon"
+    "rodez aveyron football": "rodez",
 }
 
 TRANSFORM_MAPPING = {
@@ -25,6 +27,7 @@ TRANSFORM_MAPPING = {
     "u20":"under age",
     "u21":"und age",
     "u23":"under a",
+    "warsawa": "warsaw",
     "milano": "milan",
     "sevilla": "seville",
     "torino": "turin",
@@ -36,6 +39,7 @@ TRANSFORM_MAPPING = {
     "fortaleza": "forta",
     "bahia": "bah",
     "paranaense": "athletico"
+
 }
 def clean_string(s):
     s = s.lower()
@@ -54,6 +58,11 @@ def clean_string(s):
     # Convert to lowercase
     s = s.lower()
     # Remove unwanted patterns
-    s = re.sub(r'afc|ac|fc|as|vfl|vfb|ca|Borussia|club|\s|city|town|sl|cp|county|united|fsv|tsg|rb|and|&|-|\b\d+\.\b|\d+| i | ii ', '', s)
+    s = re.sub(r'\b\w{1,2,3}\b', '', s)
+    s = re.sub(r'Borussia|stade|club|\s|city|town|county|united|-|\b\d+\.\b|\d+', '', s)
+    # s = re.sub(r'us |afc|ac|nk|fc|as|vfl|vfb|sm|ca|Borussia|rc|stade|club|\s|city|town|sl|cp|county|united|fsv|tsg|rb|and|&|-|\b\d+\.\b|\d+| i | ii ', '', s)
+    #removes every part smaller than 2 chars
+    
+
     # Remove spaces
     return s.replace(" ", "")

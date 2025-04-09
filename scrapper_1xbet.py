@@ -39,7 +39,7 @@ async def fetch_json(session, url, semaphore, retries=5):
 def is_within_4_days(timestamp):
     now = datetime.now()
     time = datetime.fromtimestamp(timestamp)
-    return abs((now - time).days) <= 4
+    return abs((now - time).days) <= 2
 
 async def get_ligue(session, league_id, semaphore):
     """Fetches matches from a specific league asynchronously."""
