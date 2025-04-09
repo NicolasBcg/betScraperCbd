@@ -3,8 +3,8 @@ from datetime import datetime, timedelta
 import aiohttp
 import asyncio
 from global_func import *
-
-
+import random
+import time
 def preprocess_team_names(name):
     return re.sub(r'\s*\(.*?\)', '', name).lower()
 
@@ -43,15 +43,15 @@ async def fetch_json(session, url,retries = 5):
                 elif attempt>3:
                     print(f"Error {response.status} fetching {url} (Retry {attempt+1}/{retries})")
                 if retries!=1:
-                    await asyncio.sleep(2)  # Wait before retry
+                    await asyncio.sleep(random.uniform(2, 4))  # Wait before retry
         except aiohttp.ClientConnectorError:
             if attempt>3:
                 print(f"Connection failed: {url} (Retry {attempt+1}/{retries})")
-            await asyncio.sleep(2)  # Wait before retry
+            await asyncio.sleep(random.uniform(2, 4))  # Wait before retry
         except asyncio.TimeoutError:
             if attempt>3:
                 print(f"Timeout: {url} (Retry {attempt+1}/{retries})")
-            await asyncio.sleep(3)  # Wait longer before retry
+            await asyncio.sleep(random.uniform(2, 4))  # Wait longer before retry
     return None
 
 async def process_league_pinnacle(session, leagueID):
@@ -88,7 +88,7 @@ async def process_league_pinnacle(session, leagueID):
             if not contains_keywords(team1) and is_within_4_days(m["startTime"]):
                 resp = await fetch_json(session,f"https://guest.api.arcadia.pinnacle.com/0.1/matchups/{id_match}/markets/related/straight",retries=1)
                 if resp != {} and resp != None:
-                    match.append((team1, team2, url_match,leagueID))
+                    match.append((team1, team2, url_match,leagueName))
     return match
 
 async def get_matches_pinnacle_async():
@@ -157,7 +157,7 @@ async def asynchronisator(func,arg):
 def scrape_bets_pinnacle(match):
     all_bets={}
     """Fetch and process event data from a single league."""
-    team1,team2,url,leagueID = match
+    team1,team2,url,l_name = match
     eventId=url.split('/')[-1]
     # print("https://ivibet.com"+url)
     match_url = f"https://guest.api.arcadia.pinnacle.com/0.1/matchups/{eventId}/markets/related/straight"
@@ -170,21 +170,31 @@ def scrape_bets_pinnacle(match):
     if response.status_code == 200:
         data = response.json()
     elif response.status_code == 401:
-        
-        league_matchs = asyncio.run(asynchronisator(process_league_pinnacle,leagueID))
-        for team1_,team2_,url_,leagueID_ in league_matchs: 
-            if team1_ == team1 :
-                # print(f'OLD URL : {match_url}')
-                # print(f'NEW URL : {url_}')    
-                return scrape_bets_pinnacle((team1_,team2_,url_,leagueID_))
+        for _ in range(5):
+            time.sleep(0.1)
+            all_leagues_url = "https://guest.api.arcadia.pinnacle.com/0.1/sports/29/leagues?all=false&brandId=0"
+            all_leagues_r = requests.get(all_leagues_url)
+            if all_leagues_r.status_code == 200:
+                all_leagues = all_leagues_r.json()
+                for league in all_leagues:
+                    if league["name"] == l_name:
+                        leagueID = league["id"]
+                        league_matchs = asyncio.run(asynchronisator(process_league_pinnacle,leagueID))
+                        for team1_,team2_,url_,leagueID_ in league_matchs: 
+                            if team1_ == team1 : 
+                                return scrape_bets_pinnacle((team1_,team2_,url_,leagueID_))
+                
+            
     else:
         print(url)
         print(f"Pinnacle Error fetching {match_url}: {response.status_code}")
         return {}
     try : 
         if not data:
+            print(f"Pinnacle No data from {match_url}: {response.status_code}")
             return {}
     except : 
+        print(f"Pinnacle Error fetching data from {match_url}: {response.status_code}")
         return {}
     teams= {"home": team1,"away":team2, "draw":"draw"}
     markets = [(market["type"],market["prices"]) for market in data 
@@ -228,8 +238,8 @@ def scrape_bets_pinnacle(match):
         if bet in bets["Handicap"].keys():
             bets["doubleChance"][translation]=bets["Handicap"][bet]         
 
-    if '2_-0.0' in bets["Handicap"]:
-        print(f'ERROR 1_-0.0 {match_url}')
+    if bets["WLD"]  == {} :
+        print(f'ERROR {url} /// {match_url}')
     return bets
     
 

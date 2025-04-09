@@ -32,11 +32,26 @@ def treat_BTTS(sites):
     return found
 
 def treat_WLD_DoubleChance(sitesWLD,sitesDoubleChance):
-    for site1, sname1 in sitesWLD:
-        for site2, sname2 in sitesDoubleChance: 
+    found = []
+    for site1, sname1 in sitesDoubleChance:
+        for site2, sname2 in sitesWLD: 
             if not sname2 == sname1 :
                 for s1bet,s2bet in [('1X','2'),('12','X'),('2X','1')]:
-                    o1=site1["1"]
+                    try : 
+                        o1,o2=site1[s1bet],site2[s2bet]
+                        s1,s2 = 1/o1, 1/o2
+                        ratio = s2+ s1
+                        stake1,stake2 = round (s1*200, 0),round (s2*200, 0)
+                        minGain = min(stake1*o1, stake2*o2)/(stake1+stake2)
+                        if ratio<= 1.02:
+                                print(f"DoubleChance {sname1}:{s1bet}:{o1} {sname2}:{s2bet}:{o2} {ratio:.6f}")
+                        if (minGain >= 1.000 or ratio<= 0.996)  and ratio>= 0.75:
+                            found.append((f"DoubleChance {sname1}:{s1bet}:{o1} {sname2}:{s2bet}:{o2} {ratio:.6f}  \n"
+                                            f"Bet {sname1}:{s1bet}:{stake1} {sname2}:{s2bet}:{stake2}  min gain {minGain}\n"
+                                            , ratio))
+                    except : 
+                        pass
+    return list(set(found))
 
 def treat_WLD(sites):
     found = []
@@ -143,8 +158,10 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                                     found.append((f"Handi {sname1}:{hdTeam}:{o1} {sname2}:X:{draw} {sname3}:{winTeam}:{w2} {ratio:.6f}  \n"
                                             f"Bet {sname1}:{hdTeam}:{stake1} {sname2}:X:{stake2} {sname3}:{winTeam}:{stake3} min gain {minGain}\n"
                                             , ratio))
-                            except:
+                            except Exception as e:
                                 pass
+                                
+                                
                     
 
                     for hdTeam,winTeam in [("1_+0.25","2"),("2_+0.25","1")]:
@@ -309,7 +326,8 @@ def process_odds_to_find_arbs(sites,snames=["1xbet","188bet","Pinnacle","Ivi","M
         sitesDoubleChance = [(site['doubleChance'],sname) for site,sname in valid_sites if 'doubleChance' in site.keys()]
 
         siteWLD_Not_Empty = [(site,sname) for site,sname in sitesWLD if site != {}]
-        arbitrage=arbitrage+treat_Handicap_WLD(sitesHandicap,siteWLD_Not_Empty)
+        arbitrage = arbitrage+treat_Handicap_WLD(sitesHandicap,siteWLD_Not_Empty)
+        arbitrage = arbitrage+treat_WLD_DoubleChance(siteWLD_Not_Empty,sitesDoubleChance)
     except :
         pass
     # print("-------------------------------------------------")
@@ -369,7 +387,7 @@ if __name__ == "__main__":
                 "1xbet",
                 # "188bet",
                 "Pinnacle",
-                "Ivi",
+                # "Ivi",
                 # "Mega",
                 # "betsson"
                 ] 
@@ -377,7 +395,7 @@ if __name__ == "__main__":
             get_all_bets_threader_1xbet,
             # get_all_bets_threader_188,
             get_all_bets_threader_Pinnacle,
-            get_all_bets_threader_Ivi,
+            # get_all_bets_threader_Ivi,
             # get_all_bets_threader_Mega,
             # get_all_bets_threader_Betsson
             ]
@@ -386,7 +404,7 @@ if __name__ == "__main__":
             # threading.Thread(target=fetch_matches, args=(get_matches_188, "teams188", queue)),
             threading.Thread(target=fetch_matches, args=(get_matches_pinnacle, "teamsPinnacle", queue)),
             threading.Thread(target=fetch_matches, args=(get_matches_1xbet, "teams1xbet", queue)),
-            threading.Thread(target=fetch_matches, args=(get_matches_ivi, "teamsIvi", queue)),
+            # threading.Thread(target=fetch_matches, args=(get_matches_ivi, "teamsIvi", queue)),
             # threading.Thread(target=fetch_matches, args=(get_matches_mega, "teamsMega", queue)),
             # threading.Thread(target=fetch_matches, args=(get_matches_betsson, "betsson", queue)),
         ]
@@ -404,7 +422,7 @@ if __name__ == "__main__":
         teamsPinnacle = results.get("teamsPinnacle")
         # teams188 = results.get("teams188")
         teams1xbet = results.get("teams1xbet")
-        teamsIvi = results.get("teamsIvi")
+        # teamsIvi = results.get("teamsIvi")
         # teamsMega = results.get("teamsMega")
         # teamsBetsson = results.get("betsson")
 
@@ -417,7 +435,7 @@ if __name__ == "__main__":
             teams1xbet,
             # teams188,
             teamsPinnacle,
-            teamsIvi,
+            # teamsIvi,
             # teamsMega,
             # teamsBetsson
             ]
