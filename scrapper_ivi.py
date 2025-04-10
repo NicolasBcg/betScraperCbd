@@ -27,7 +27,7 @@ async def is_within_4_days(time_str):
     """Check if the event time is within the next 4 days."""
     event_time = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
     now = datetime.now()
-    return now <= event_time <= now + timedelta(days=2)
+    return now <= event_time <= now + timedelta(days=4)
 
 
 async def fetch_json(session, url,retries = 5):

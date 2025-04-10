@@ -8,7 +8,7 @@ def logwrite(message,display_type=""):
         print(message)
 MAPPING_MATCH = {
     "man city": "manchester city",
-    "manchester united": "man utd",
+    "man utd" : "manchester united",
     "bayern munich": "bayern",
     "psg": "paris saint-germain",
     "inter milan": "inter",
@@ -18,26 +18,32 @@ MAPPING_MATCH = {
     "spurs": "tottenham",
     "olympique de marseille": "marseille",
     "olympique lyonnais": "lyon",
-    "olympique lyon": "lyon"
+    "olympique lyon": "lyon",
     "rodez aveyron football": "rodez",
+    "nancy-loraine": "nancy",
+    'bodoe/glimt' : "bodo glimt",
+    'lazio rome' : "lazio"
 }
 
 TRANSFORM_MAPPING = {
-    "u19":"under ages",
-    "u20":"under age",
-    "u21":"und age",
-    "u23":"under a",
+    "ii" : "deux",
+    "u19":"under agea",
+    "u20":"under ageb",
+    "u21":"under agec",
+    "u23":"under aged",
     "warsawa": "warsaw",
     "milano": "milan",
     "sevilla": "seville",
     "torino": "turin",
-    "fluminense": "flu",
+    "(women)":"",
+    ".": "",
+    # "flu": "fluminense",
     "botafogo": "bota",
     "internacional": "inter",
     "internazional": "inter",
     "cruzeiro": "cruz",
     "fortaleza": "forta",
-    "bahia": "bah",
+    # "bah": "bahia",
     "paranaense": "athletico"
 
 }
@@ -58,7 +64,7 @@ def clean_string(s):
     # Convert to lowercase
     s = s.lower()
     # Remove unwanted patterns
-    s = re.sub(r'\b\w{1,2,3}\b', '', s)
+    s = re.sub(r'\b\w{1,3}\b', '', s)
     s = re.sub(r'Borussia|stade|club|\s|city|town|county|united|-|\b\d+\.\b|\d+', '', s)
     # s = re.sub(r'us |afc|ac|nk|fc|as|vfl|vfb|sm|ca|Borussia|rc|stade|club|\s|city|town|sl|cp|county|united|fsv|tsg|rb|and|&|-|\b\d+\.\b|\d+| i | ii ', '', s)
     #removes every part smaller than 2 chars
@@ -66,3 +72,5 @@ def clean_string(s):
 
     # Remove spaces
     return s.replace(" ", "")
+
+# print(clean_string('Inter Miami II'))

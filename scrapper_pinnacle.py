@@ -15,7 +15,7 @@ def is_within_4_days(cutoff_str):
     # Obtenir la date actuelle en UTC
     now = datetime.now()
     # Vérifier si la date est dans moins de 4 jours
-    return now <= cutoff_dt <= now + timedelta(days=2)
+    return now <= cutoff_dt <= now + timedelta(days=4)
 
 #https://guest.api.arcadia.pinnacle.com/0.1/leagues/{league}/matchups?brandId=0
 #https://guest.api.arcadia.pinnacle.com/0.1/sports/29/leagues?all=false&brandId=0
@@ -79,8 +79,8 @@ async def process_league_pinnacle(session, leagueID):
             team2 = m["participants"][1]["name"]+adds
             id_match = m["id"]
             
-            url_match = f"https://www.pinnacle.bet/en/soccer/{format_name(leagueName)}/{format_name(team1)}-vs-{format_name(team2)}/{id_match}"
-
+            # url_match = f"https://www.pinnacle.bet/en/soccer/{format_name(leagueName)}/{format_name(team1)}-vs-{format_name(team2)}/{id_match}"
+            url_match = f"https://www.pinnacle.com/en/soccer/{format_name(leagueName)}/matchups/#all"
             if not contains_keywords(team1) and is_within_4_days(m["startTime"]):
                 resp = await fetch_json(session,f"https://guest.api.arcadia.pinnacle.com/0.1/matchups/{id_match}/markets/related/straight",retries=1)
                 if resp != {} and resp != None:
