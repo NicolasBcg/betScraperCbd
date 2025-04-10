@@ -84,7 +84,7 @@ async def process_league_pinnacle(session, leagueID):
             if not contains_keywords(team1) and is_within_4_days(m["startTime"]):
                 resp = await fetch_json(session,f"https://guest.api.arcadia.pinnacle.com/0.1/matchups/{id_match}/markets/related/straight",retries=1)
                 if resp != {} and resp != None:
-                    match.append((team1, team2, url_match,leagueName))
+                    match.append((team1, team2, url_match,leagueName,id_match))
     return match
 
 async def get_matches_pinnacle_async():
@@ -153,8 +153,8 @@ async def asynchronisator(func,arg):
 def scrape_bets_pinnacle(match):
     all_bets={}
     """Fetch and process event data from a single league."""
-    team1,team2,url,l_name = match
-    eventId=url.split('/')[-1]
+    team1,team2,url,l_name,eventId = match
+    # eventId=url.split('/')[-1]
     # print("https://ivibet.com"+url)
     match_url = f"https://guest.api.arcadia.pinnacle.com/0.1/matchups/{eventId}/markets/related/straight"
     # print(url)
@@ -176,9 +176,9 @@ def scrape_bets_pinnacle(match):
                     if league["name"] == l_name:
                         leagueID = league["id"]
                         league_matchs = asyncio.run(asynchronisator(process_league_pinnacle,leagueID))
-                        for team1_,team2_,url_,leagueID_ in league_matchs: 
+                        for team1_,team2_,url_,leagueID_,eventId_ in league_matchs: 
                             if team1_ == team1 : 
-                                return scrape_bets_pinnacle((team1_,team2_,url_,leagueID_))
+                                return scrape_bets_pinnacle((team1_,team2_,url_,leagueID_,eventId_))
                 
             
     else:
