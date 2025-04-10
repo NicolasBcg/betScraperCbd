@@ -384,17 +384,17 @@ if __name__ == "__main__":
         common=[]
         queue = Queue()
         snames=[
-                # "1xbet",
+                "1xbet",
                 # "188bet",
-                "Pinnacle",
+                # "Pinnacle",
                 "Ivi",
                 # "Mega",
                 # "betsson"
                 ] 
         sfunctions=[
-            # get_all_bets_threader_1xbet,
+            get_all_bets_threader_1xbet,
             # get_all_bets_threader_188,
-            get_all_bets_threader_Pinnacle,
+            # get_all_bets_threader_Pinnacle,
             get_all_bets_threader_Ivi,
             # get_all_bets_threader_Mega,
             # get_all_bets_threader_Betsson
@@ -402,8 +402,8 @@ if __name__ == "__main__":
 
         threads = [
             # threading.Thread(target=fetch_matches, args=(get_matches_188, "teams188", queue)),
-            threading.Thread(target=fetch_matches, args=(get_matches_pinnacle, "teamsPinnacle", queue)),
-            # threading.Thread(target=fetch_matches, args=(get_matches_1xbet, "teams1xbet", queue)),
+            # threading.Thread(target=fetch_matches, args=(get_matches_pinnacle, "teamsPinnacle", queue)),
+            threading.Thread(target=fetch_matches, args=(get_matches_1xbet, "teams1xbet", queue)),
             threading.Thread(target=fetch_matches, args=(get_matches_ivi, "teamsIvi", queue)),
             # threading.Thread(target=fetch_matches, args=(get_matches_mega, "teamsMega", queue)),
             # threading.Thread(target=fetch_matches, args=(get_matches_betsson, "betsson", queue)),
@@ -419,9 +419,9 @@ if __name__ == "__main__":
         while not queue.empty():
             results.update(queue.get())
 
-        teamsPinnacle = results.get("teamsPinnacle")
+        # teamsPinnacle = results.get("teamsPinnacle")
         # teams188 = results.get("teams188")
-        # teams1xbet = results.get("teams1xbet")
+        teams1xbet = results.get("teams1xbet")
         teamsIvi = results.get("teamsIvi")
         # teamsMega = results.get("teamsMega")
         # teamsBetsson = results.get("betsson")
@@ -432,9 +432,9 @@ if __name__ == "__main__":
         
         # Example usage:
         teams_list = [
-            # teams1xbet,
+            teams1xbet,
             # teams188,
-            teamsPinnacle,
+            # teamsPinnacle,
             teamsIvi,
             # teamsMega,
             # teamsBetsson
