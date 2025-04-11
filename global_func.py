@@ -64,7 +64,7 @@ def clean_string(s):
     # Convert to lowercase
     s = s.lower()
     # Remove unwanted patterns
-    if s = re.sub(r'\b\w{1,3}\b', '', s) != "":
+    if re.sub(r'\b\w{1,3}\b', '', s) != "":
         s = re.sub(r'\b\w{1,3}\b', '', s)
     s = re.sub(r'Borussia|stade|club|\s|city|town|county|united|-|\b\d+\.\b|\d+', '', s)
     # s = re.sub(r'us |afc|ac|nk|fc|as|vfl|vfb|sm|ca|Borussia|rc|stade|club|\s|city|town|sl|cp|county|united|fsv|tsg|rb|and|&|-|\b\d+\.\b|\d+| i | ii ', '', s)
