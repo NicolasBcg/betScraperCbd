@@ -1,10 +1,5 @@
-import time
-from bs4 import BeautifulSoup
 import requests
-# Set up headless Chrome
-import json
 from global_func import *
-from datetime import datetime, timedelta
 import aiohttp
 import asyncio
 import re
@@ -36,10 +31,6 @@ async def fetch_json(session, url, semaphore, retries=5):
                     logwrite(f"Timeout: {url} (Retry {attempt+1}/{retries})", display_type="CONNECTION_ERROR")
                 await asyncio.sleep(3)  # Wait longer before retry
     return None
-def is_within_4_days(timestamp):
-    now = datetime.now()
-    time = datetime.fromtimestamp(timestamp)
-    return abs((now - time).days) <= 2
 
 async def get_ligue(session, league_id, semaphore):
     """Fetches matches from a specific league asynchronously."""
@@ -178,25 +169,25 @@ def format_1xbet_1X2(res,team1,team2):
     WLD = {}
     if len(res) == 3:
         if clean_string(team1)<=clean_string(team2):
-            WLD["1"]=res[2]
-            WLD["2"]=res[0]
-        else:
-            WLD["1"]=res[0]
-            WLD["2"]=res[2]
-        WLD["X"]=res[1]
+            WLD["1"]=res[2] * 0.91
+            WLD["2"]=res[0] * 0.91
+        else: 
+            WLD["1"]=res[0] * 0.91
+            WLD["2"]=res[2] * 0.91
+        WLD["X"]=res[1] * 0.91
     return WLD
 
 def format_1xbet_1X2_doubleChance(res,team1,team2):
     WLD = {}
     if len(res) == 3:
         if clean_string(team1)<=clean_string(team2):
-            WLD["1X"]=res[2]
-            WLD["2X"]=res[0]
-            WLD["12"]=res[1]
+            WLD["1X"]=res[2] * 0.91
+            WLD["2X"]=res[0] * 0.91
+            WLD["12"]=res[1] * 0.91
         else:
-            WLD["1X"]=res[0]
-            WLD["2X"]=res[2]
-            WLD["12"]=res[1]
+            WLD["1X"]=res[0] * 0.91
+            WLD["2X"]=res[2] * 0.91
+            WLD["12"]=res[1] * 0.91
     return WLD
 
 def format_1xbet_BTTS(res,team1,team2):#both team to score
@@ -215,9 +206,9 @@ def format_1xbet_OverUnder(res,team1,team2):
         value = float(r[2])
         parts = r[0]
         if 9 == parts:
-            OverUnders[f"O_{r[1]}"] = value
+            OverUnders[f"O_{r[1]}"] = value * 0.91
         elif 10 == parts:
-            OverUnders[f"U_{r[1]}"] = value
+            OverUnders[f"U_{r[1]}"] = value * 0.91
     return OverUnders
 
 def format_1xbet_Handicap(res,team1,team2):
@@ -231,9 +222,9 @@ def format_1xbet_Handicap(res,team1,team2):
         value = float(r[2])
         parts = r[0]
         if parts in t1:
-            OverUnders[f"1_{r[1]}"] = value
+            OverUnders[f"1_{r[1]}"] = value * 0.91
         elif parts in t2:
-            OverUnders[f"2_{r[1]}"] = value
+            OverUnders[f"2_{r[1]}"] = value * 0.91
     return OverUnders
 # for m in get_matches_1xbet():
 #     print(m)

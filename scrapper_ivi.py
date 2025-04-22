@@ -2,32 +2,22 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
 from bs4 import BeautifulSoup
-import re
 import requests
-from datetime import datetime, timedelta
 # Set up headless Chrome
 from global_func import *
-def setup_driver():
-    """Set up a Selenium WebDriver instance."""
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--log-level=3")
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.set_page_load_timeout(15)
-    time.sleep(5)  # Ensure we don't trigger rate limits
-    return driver
-# # Create a new Chrome session
+# def setup_driver():
+#     """Set up a Selenium WebDriver instance."""
+#     chrome_options = Options()
+#     chrome_options.add_argument("--headless")
+#     chrome_options.add_argument("--log-level=3")
+#     driver = webdriver.Chrome(options=chrome_options)
+#     driver.set_page_load_timeout(15)
+#     time.sleep(5)  # Ensure we don't trigger rate limits
+#     return driver
 
 import asyncio
 import aiohttp
 import time
-from datetime import datetime, timedelta
-
-async def is_within_4_days(time_str):
-    """Check if the event time is within the next 4 days."""
-    event_time = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
-    now = datetime.now()
-    return now <= event_time <= now + timedelta(days=4)
 
 
 async def fetch_json(session, url,retries = 5):
@@ -86,7 +76,7 @@ async def process_league(session, league):
             f"https://ivibet.com/prematch/football/{leagueId}-{leagueName}/{m['id']}-{m['translationSlug']}"
         )
         for m in data["data"].get("items", [])
-        if await is_within_4_days(m["time"])
+        if await is_within_4_days_async(m["time"])
     ]
 
     return matchs
@@ -114,18 +104,19 @@ def get_matches_ivi():
 
 
 def get_all_bets_threader_Ivi(queue_in,queue_out,blank):
-    driver= setup_driver()
+    # driver= setup_driver()
     while True :
         to_get = queue_in.get()
         if to_get == 0:
-            driver.quit()
+            # driver.quit()
             break 
         elif to_get == -1:
             queue_out.put(blank)
         else : 
             r = scrape_bets_ivi(to_get)
             if r == {}:
-                queue_out.put(get_bets_ivi(driver,to_get))
+                queue_out.put(r)
+                # queue_out.put(get_bets_ivi(driver,to_get))
             else : 
                 queue_out.put(r)
 

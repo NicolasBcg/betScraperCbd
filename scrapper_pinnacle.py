@@ -8,14 +8,14 @@ import time
 def preprocess_team_names(name):
     return re.sub(r'\s*\(.*?\)', '', name).lower()
 
-def is_within_4_days(cutoff_str):
-    # Convertir la date du JSON en objet datetime
-    cutoff_dt = datetime.strptime(cutoff_str, "%Y-%m-%dT%H:%M:%SZ")
+# def is_within_4_days(cutoff_str):
+#     # Convertir la date du JSON en objet datetime
+#     cutoff_dt = datetime.strptime(cutoff_str, "%Y-%m-%dT%H:%M:%SZ")
     
-    # Obtenir la date actuelle en UTC
-    now = datetime.now()
-    # Vérifier si la date est dans moins de 4 jours
-    return now <= cutoff_dt <= now + timedelta(days=4)
+#     # Obtenir la date actuelle en UTC
+#     now = datetime.now()
+#     # Vérifier si la date est dans moins de 4 jours
+#     return now <= cutoff_dt <= now + timedelta(days=4)
 
 #https://guest.api.arcadia.pinnacle.com/0.1/leagues/{league}/matchups?brandId=0
 #https://guest.api.arcadia.pinnacle.com/0.1/sports/29/leagues?all=false&brandId=0
@@ -75,13 +75,15 @@ async def process_league_pinnacle(session, leagueID):
                 adds=' u21'
             if 'women' in spl :
                 adds+='femmes'
+            if 'reserve' in spl :
+                adds+=' reserve' 
             team1 = m["participants"][0]["name"]+adds
             team2 = m["participants"][1]["name"]+adds
             id_match = m["id"]
             
             # url_match = f"https://www.pinnacle.bet/en/soccer/{format_name(leagueName)}/{format_name(team1)}-vs-{format_name(team2)}/{id_match}"
             url_match = f"https://www.pinnacle.com/en/soccer/{format_name(leagueName)}/matchups/#all"
-            if not contains_keywords(team1) and is_within_4_days(m["startTime"]):
+            if not contains_keywords(team1) and await is_within_4_days_async(m["startTime"],website='pinnacle'):
                 resp = await fetch_json(session,f"https://guest.api.arcadia.pinnacle.com/0.1/matchups/{id_match}/markets/related/straight",retries=1)
                 if resp != {} and resp != None:
                     match.append((team1, team2, url_match,leagueName,id_match))

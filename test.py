@@ -4,12 +4,9 @@ import threading
 from queue import Queue
 import pandas as pd
 import math
-# from test1 import *
 from scrapper_1xbet import *
 from scrapper_pinnacle import *
 from scrapper_ivi import *
-# from scrapper_megaparis import *
-# from scrapper_betsson import *
 from global_func import *
 
 blank = {'OU':{},'WLD':{},'BTTS':{}}
@@ -24,7 +21,7 @@ def treat_BTTS(sites):
                         ratio = 1/site1[bet+"Yes"]+1/site2[bet+"No"]
                         if ratio<= 1.005:
                             print(f"YN {ratio} {sname1}_Yes_{site1[bet+'Yes']}_{sname2}_No_{site2[bet+'No']} ")
-                        if ratio<= 0.995:
+                        if ratio<= 0.997:
                             found.append((f"{sname1}_Yes_{site1[bet+'Yes']}_{sname2}_No_{site2[bet+'No']}_{bet}",ratio))
                     except: 
                         pass
@@ -44,7 +41,7 @@ def treat_WLD_DoubleChance(sitesWLD,sitesDoubleChance):
                         minGain = min(stake1*o1, stake2*o2)/(stake1+stake2)
                         if ratio<= 1.005:
                                 print(f"DoubleChance {sname1}:{s1bet}:{o1} {sname2}:{s2bet}:{o2} {ratio:.6f}")
-                        if (minGain >= 1.000 or ratio<= 0.996)  and ratio>= 0.75:
+                        if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
                             found.append((f"DoubleChance {sname1}:{s1bet}:{o1} {sname2}:{s2bet}:{o2} {ratio:.6f}  \n"
                                             f"Bet {sname1}:{s1bet}:{stake1} {sname2}:{s2bet}:{stake2}  min gain {minGain}\n"
                                             , ratio))
@@ -77,7 +74,7 @@ def treat_WLD(sites):
 
                         if ratio<= 1.005:
                             print(f"WLD ratio {sname1}:1:{o1} {sname2}:X:{o2} {sname3}:2:{o3} {ratio:.6f}")
-                        if (minGain >= 1.000 or ratio<= 0.996)  and ratio>= 0.75:
+                        if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
                             found.append((f"WLD ratio {sname1}:1:{o1} {sname2}:X:{o2} {sname3}:2:{o3} {ratio:.6f}  \n"
                                             f"Bet {sname1}:1:{stake1} {sname2}:X:{stake2} {sname3}:2:{stake3} min gain {minGain}\n"
                                             , ratio))
@@ -130,7 +127,7 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                     #             minGain = Handicap_WLD_Configs[0]['gain'](o1,o2,o3,stake1,stake2,stake3)
                     #             if ratio<= 1.005:
                     #                 print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
-                    #             if (minGain >= 1.000 or ratio<= 0.996)  and ratio>= 0.75:
+                    #             if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
                     #                 found.append((f"Handi {sname1}:{hdTeam}:{o1} {sname2}:X:{draw} {sname3}:{winTeam}:{w2} {ratio:.6f}  \n"
                     #                         f"Bet {sname1}:{hdTeam}:{stake1} {sname2}:X:{stake2} {sname3}:{winTeam}:{stake3} min gain {minGain}\n"
                     #                         , ratio))
@@ -153,7 +150,7 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                                 minGain = min(stake1*o1, stake2*draw + stake1, stake3*w2)/(stake1+stake2+stake3)
                                 if ratio<= 1.005:
                                     print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi0_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
-                                if (minGain >= 1.000 or ratio<= 0.996)  and ratio>= 0.75:
+                                if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
                                     found.append((f"Handi {sname1}:{hdTeam}:{o1} {sname2}:X:{draw} {sname3}:{winTeam}:{w2} {ratio:.6f}  \n"
                                             f"Bet {sname1}:{hdTeam}:{stake1} {sname2}:X:{stake2} {sname3}:{winTeam}:{stake3} min gain {minGain}\n"
                                             , ratio))
@@ -178,7 +175,7 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                                     minGain = min(stake1*o1, stake2*draw + 0.5*stake1*o1, stake3*w2)/(stake1+stake2+stake3)
                                     if ratio<= 1.005:
                                         print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi0_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
-                                    if (minGain >= 1.000 or ratio<= 0.996)  and ratio>= 0.75:
+                                    if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
                                         found.append((f"Handi {sname1}:{hdTeam}:{o1} {sname2}:X:{draw} {sname3}:{winTeam}:{w2} {ratio:.6f}  \n"
                                               f"Bet {sname1}:{hdTeam}:{stake1} {sname2}:X:{stake2} {sname3}:{winTeam}:{stake3} min gain {minGain}\n"
                                               , ratio))
@@ -201,7 +198,7 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                                     minGain = min(stake1*o1, stake2*draw + 0.5*stake1, stake3*w2)/(stake1+stake2+stake3)
                                     if ratio<= 1.005:
                                         print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi0_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
-                                    if (minGain >= 1.000 or ratio<= 0.996)  and ratio>= 0.75:
+                                    if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
                                         found.append((f"Handi {sname1}:{hdTeam}:{o1} {sname2}:X:{draw} {sname3}:{winTeam}:{w2} {ratio:.6f}  \n"
                                               f"Bet {sname1}:{hdTeam}:{stake1} {sname2}:X:{stake2} {sname3}:{winTeam}:{stake3} min gain {minGain}\n"
                                               , ratio))
@@ -226,7 +223,7 @@ def treat_OverUnder(sites):
                         minGain = min(stake1*o1, stake2*o2)/(stake1+stake2)
                         if ratio<= 1.005 and ratio>= 0.75 :
                             print(f"OU {i} ratio {ratio}")
-                        if (minGain >= 1.000 or ratio<= 0.996)  and ratio>= 0.75:
+                        if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
                             found.append((f"OU {i} {sname1}_O_{o1} {sname2}_U_{o2} {ratio:.6f}  \n"
                                           f"Bet {sname1}_O_{stake1} {sname2}_U_{stake2} min gain {minGain}",ratio))
                     except : 
@@ -243,7 +240,7 @@ def treat_OverUnder(sites):
                         minGain = min(stake1*o1, stake2*o2)/(stake1+stake2)
                         if ratio<= 1.005 and ratio>= 0.75:
                             print(f"Handicap {i} {sname1}_+_{o1}  {sname2}_-_{o2} {ratio}")
-                        if (minGain >= 1.000 or ratio<= 0.996)  and ratio>= 0.75:
+                        if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
                             found.append((f"Handicap {i} {sname1}_+_{o1}  {sname2}_-_{o2} {ratio} \n"
                                           f"Bets {sname1}_+_{stake1}  {sname2}_-_{stake2} min gain {minGain}",ratio))
                 
@@ -258,7 +255,7 @@ def treat_OverUnder(sites):
                     minGain = min(stake1*o1, stake2*o2)/(stake1+stake2)
                     if ratio<= 1.005:
                             print(f"Handicap 0 {sname1}_+_{o1}  {sname2}_-_{o2} {ratio}")
-                    if (minGain >= 1.000 or ratio<= 0.996)  and ratio>= 0.75:
+                    if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
                         found.append((f"Handicap 0 {sname1}_+_{o1}  {sname2}_-_{o2} {ratio} \n"
                                         f"Bets {sname1}_+_{stake1}  {sname2}_-_{stake2} min gain {minGain}",ratio))
                 except : 
@@ -379,34 +376,21 @@ if __name__ == "__main__":
     print("Import done")
     while True:
         start1 = time.time()
+        config = {
+                "1xbet" : {"get_matches": get_matches_1xbet, "get_all_bets" : get_all_bets_threader_1xbet},
+                # "188bet": {"get_matches": get_matches_188, "get_all_bets" : get_all_bets_threader_188},
+                # "Pinnacle": {"get_matches": get_matches_pinnacle, "get_all_bets" : get_all_bets_threader_Pinnacle},
+                "Ivi": {"get_matches": get_matches_ivi, "get_all_bets" : get_all_bets_threader_Ivi},
+                # "Mega": {"get_matches": get_matches_mega, "get_all_bets" : get_all_bets_threader_Mega},
+                # "betsson": {"get_matches": get_matches_betsson, "get_all_bets" : get_all_bets_threader_Betsson},
 
+        }
         common=[]
         queue = Queue()
-        snames=[
-                "1xbet",
-                # "188bet",
-                "Pinnacle",
-                # "Ivi",
-                # "Mega",
-                # "betsson"
-                ] 
-        sfunctions=[
-            get_all_bets_threader_1xbet,
-            # get_all_bets_threader_188,
-            get_all_bets_threader_Pinnacle,
-            # get_all_bets_threader_Ivi,
-            # get_all_bets_threader_Mega,
-            # get_all_bets_threader_Betsson
-            ]
+        snames=[key for key in config.keys()] 
+        sfunctions=[config[site]["get_all_bets"] for site in snames]
 
-        threads = [
-            # threading.Thread(target=fetch_matches, args=(get_matches_188, "teams188", queue)),
-            threading.Thread(target=fetch_matches, args=(get_matches_pinnacle, "teamsPinnacle", queue)),
-            threading.Thread(target=fetch_matches, args=(get_matches_1xbet, "teams1xbet", queue)),
-            # threading.Thread(target=fetch_matches, args=(get_matches_ivi, "teamsIvi", queue)),
-            # threading.Thread(target=fetch_matches, args=(get_matches_mega, "teamsMega", queue)),
-            # threading.Thread(target=fetch_matches, args=(get_matches_betsson, "betsson", queue)),
-        ]
+        threads = [threading.Thread(target=fetch_matches, args=(config[site]["get_matches"], site, queue)) for site in snames]
         print("getting pairs")
         for t in threads:
             t.start()
@@ -418,26 +402,11 @@ if __name__ == "__main__":
         while not queue.empty():
             results.update(queue.get())
 
-        teamsPinnacle = results.get("teamsPinnacle")
-        # teams188 = results.get("teams188")
-        teams1xbet = results.get("teams1xbet")
-        # teamsIvi = results.get("teamsIvi")
-        # teamsMega = results.get("teamsMega")
-        # teamsBetsson = results.get("betsson")
-
-
         end = time.time()
         print(f"total exec time = {end-start1}")
         
         # Example usage:
-        teams_list = [
-            teams1xbet,
-            # teams188,
-            teamsPinnacle,
-            # teamsIvi,
-            # teamsMega,
-            # teamsBetsson
-            ]
+        teams_list = [results.get(site) for site in snames]
 
         notFound=[]
         for l in teams_list:
@@ -484,30 +453,20 @@ if __name__ == "__main__":
         # Save to Excel file
         df.to_excel("teams_data.xlsx", index=False)
         
-        
-        # for c in common: 
-        #     print(c)
         print("!!!COMMON!!!")
         print(f'Total : {len(common)}')
         
         start2 = time.time()
         
-        # queues_in = [Queue() for _ in snames]
-        # queues_out = [Queue() for _ in snames]
-        # queues_in2 = [Queue() for _ in snames]
-        # queues_out2 = [Queue() for _ in snames]
-        # queues_in3 = [Queue() for _ in snames]
-        # queues_out3 = [Queue() for _ in snames]
-        division_number = 4
-        all_queues = [([Queue() for _ in snames],[Queue() for _ in snames]) for _ in range(division_number)]
+
+        
+        all_queues = [([Queue() for _ in snames],[Queue() for _ in snames]) for _ in range(DIVISION_NUMBER)]
         threads = []
         for queues_in,queues_out in all_queues:
             threads+=[threading.Thread(target=sfunc, args=(queue_in,queue_out,blank)) for sfunc,queue_in,queue_out in zip(sfunctions,queues_in,queues_out)]
 
-        # threads = [threading.Thread(target=sfunc, args=(queue_in,queue_out,blank)) for sfunc,queue_in,queue_out in zip(sfunctions,queues_in,queues_out)]+[threading.Thread(target=sfunc, args=(queue_in,queue_out,blank)) for sfunc,queue_in,queue_out in zip(sfunctions,queues_in2,queues_out2)]
-        # threads = threads+[threading.Thread(target=sfunc, args=(queue_in,queue_out,blank)) for sfunc,queue_in,queue_out in zip(sfunctions,queues_in3,queues_out3)]
         odds_processer_queue= Queue()
-        div = math.ceil(len(common) / division_number)
+        div = math.ceil(len(common) / DIVISION_NUMBER)
         for q, queues in enumerate(all_queues):
             queues_in, queues_out = queues
             start = div * q
@@ -517,9 +476,6 @@ if __name__ == "__main__":
                     target=odds_requester,
                     args=(common[start:end], queues_in, queues_out, odds_processer_queue)
                 ))
-        # threads.append(threading.Thread(target=odds_requester, args=(common[:mid],queues_in,queues_out,odds_processer_queue)))
-        # threads.append(threading.Thread(target=odds_requester, args=(common[mid:2*mid],queues_in2,queues_out2,odds_processer_queue)))
-        # threads.append(threading.Thread(target=odds_requester, args=(common[2*mid:],queues_in3,queues_out3,odds_processer_queue)))
         threads.append(threading.Thread(target=process_as_it_comes, args=(odds_processer_queue,snames)))
         for t in threads:
             t.start()
