@@ -1,8 +1,8 @@
 import re
 from unidecode import unidecode
 from datetime import datetime,timedelta
-DISPLAY_CONNECTION_ERROR = False
-TIMERANGE_START = 4
+DISPLAY_CONNECTION_ERROR = True
+TIMERANGE_START = 0
 TIMERANGE = 6
 DIVISION_NUMBER = 3
 
@@ -36,7 +36,10 @@ def is_within_4_days(timestamp):
     if type(timestamp) == str:
         cutoff_dt = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
     else :
-        cutoff_dt = datetime.fromtimestamp(timestamp)
+        if timestamp > 100000000000:
+            cutoff_dt = datetime.fromtimestamp(timestamp/1000)
+        else :
+            cutoff_dt = datetime.fromtimestamp(timestamp)
     return now + timedelta(days=TIMERANGE_START) <= cutoff_dt <= now + timedelta(days=TIMERANGE)
 
 async def is_within_4_days_async(timestamp,website = "ivi"):
@@ -47,7 +50,10 @@ async def is_within_4_days_async(timestamp,website = "ivi"):
         elif website == "ivi":
             cutoff_dt = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
     else :
-        cutoff_dt = datetime.fromtimestamp(timestamp)
+        if timestamp > 100000000000:
+            cutoff_dt = datetime.fromtimestamp(timestamp/1000)
+        else :
+            cutoff_dt = datetime.fromtimestamp(timestamp)
     return now + timedelta(days=TIMERANGE_START) <= cutoff_dt <= now + timedelta(days=TIMERANGE)
 
 MAPPING_MATCH = {

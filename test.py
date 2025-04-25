@@ -8,6 +8,14 @@ from scrapper_1xbet import *
 from scrapper_pinnacle import *
 from scrapper_ivi import *
 from global_func import *
+import webbrowser
+
+
+def open_chrome(url):
+    chrome_path = 'C:/Program Files/Google/Chrome/Application/chrome.exe %s'
+    webbrowser.get(chrome_path).open(url)
+
+
 
 blank = {'OU':{},'WLD':{},'BTTS':{}}
 
@@ -41,7 +49,7 @@ def treat_WLD_DoubleChance(sitesWLD,sitesDoubleChance):
                         minGain = min(stake1*o1, stake2*o2)/(stake1+stake2)
                         if ratio<= 1.005:
                                 print(f"DoubleChance {sname1}:{s1bet}:{o1} {sname2}:{s2bet}:{o2} {ratio:.6f}")
-                        if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
+                        if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
                             found.append((f"DoubleChance {sname1}:{s1bet}:{o1} {sname2}:{s2bet}:{o2} {ratio:.6f}  \n"
                                             f"Bet {sname1}:{s1bet}:{stake1} {sname2}:{s2bet}:{stake2}  min gain {minGain}\n"
                                             , ratio))
@@ -74,7 +82,7 @@ def treat_WLD(sites):
 
                         if ratio<= 1.005:
                             print(f"WLD ratio {sname1}:1:{o1} {sname2}:X:{o2} {sname3}:2:{o3} {ratio:.6f}")
-                        if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
+                        if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
                             found.append((f"WLD ratio {sname1}:1:{o1} {sname2}:X:{o2} {sname3}:2:{o3} {ratio:.6f}  \n"
                                             f"Bet {sname1}:1:{stake1} {sname2}:X:{stake2} {sname3}:2:{stake3} min gain {minGain}\n"
                                             , ratio))
@@ -115,7 +123,7 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
             for site2,sname2 in sitesWLD: 
                 for site3,sname3 in sitesWLD: 
                     # for hdTeam,winTeam in Handicap_WLD_Configs[0]['bet1_bet2_list']:
-                    #     if not (sname2==sname1 and sname2==sname3):
+                    #     if not (sname2==sname1 and sname2==sname3 and sname1==sname3):
                     #             try:
                     #                 o1,o2,o3 = oddsHandicap[hdTeam],site2["X"],site3[winTeam]
                     #             except : 
@@ -127,7 +135,7 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                     #             minGain = Handicap_WLD_Configs[0]['gain'](o1,o2,o3,stake1,stake2,stake3)
                     #             if ratio<= 1.005:
                     #                 print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
-                    #             if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
+                    #             if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
                     #                 found.append((f"Handi {sname1}:{hdTeam}:{o1} {sname2}:X:{draw} {sname3}:{winTeam}:{w2} {ratio:.6f}  \n"
                     #                         f"Bet {sname1}:{hdTeam}:{stake1} {sname2}:X:{stake2} {sname3}:{winTeam}:{stake3} min gain {minGain}\n"
                     #                         , ratio))
@@ -135,7 +143,7 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
 
 
                     for hdTeam,winTeam in [("1_0","2"),("2_0","1")]:
-                        if not (sname2==sname1 and sname2==sname3):
+                        if not (sname2==sname1 and sname2==sname3 and sname1==sname3):
                             try:
                                 o1 = oddsHandicap[hdTeam]
                                 draw = site2["X"]
@@ -150,7 +158,7 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                                 minGain = min(stake1*o1, stake2*draw + stake1, stake3*w2)/(stake1+stake2+stake3)
                                 if ratio<= 1.005:
                                     print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi0_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
-                                if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
+                                if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
                                     found.append((f"Handi {sname1}:{hdTeam}:{o1} {sname2}:X:{draw} {sname3}:{winTeam}:{w2} {ratio:.6f}  \n"
                                             f"Bet {sname1}:{hdTeam}:{stake1} {sname2}:X:{stake2} {sname3}:{winTeam}:{stake3} min gain {minGain}\n"
                                             , ratio))
@@ -161,7 +169,7 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                     
 
                     for hdTeam,winTeam in [("1_+0.25","2"),("2_+0.25","1")]:
-                        if not (sname2==sname1 and sname2==sname3):
+                        if not (sname2==sname1 and sname2==sname3 and sname1==sname3):
                             try:
                                 o1 = oddsHandicap[hdTeam]
                                 draw = site2["X"]
@@ -175,7 +183,7 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                                     minGain = min(stake1*o1, stake2*draw + 0.5*stake1*o1, stake3*w2)/(stake1+stake2+stake3)
                                     if ratio<= 1.005:
                                         print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi0_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
-                                    if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
+                                    if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
                                         found.append((f"Handi {sname1}:{hdTeam}:{o1} {sname2}:X:{draw} {sname3}:{winTeam}:{w2} {ratio:.6f}  \n"
                                               f"Bet {sname1}:{hdTeam}:{stake1} {sname2}:X:{stake2} {sname3}:{winTeam}:{stake3} min gain {minGain}\n"
                                               , ratio))
@@ -184,7 +192,7 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                             except:
                                 pass
                     for hdTeam,winTeam in [("1_-0.25","2"),("2_-0.25","1")]:
-                        if not (sname2==sname1 and sname2==sname3):
+                        if not (sname2==sname1 and sname2==sname3 and sname1==sname3):
                             try:
                                 o1 = oddsHandicap[hdTeam]
                                 draw = site2["X"]
@@ -198,7 +206,7 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                                     minGain = min(stake1*o1, stake2*draw + 0.5*stake1, stake3*w2)/(stake1+stake2+stake3)
                                     if ratio<= 1.005:
                                         print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi0_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
-                                    if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
+                                    if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
                                         found.append((f"Handi {sname1}:{hdTeam}:{o1} {sname2}:X:{draw} {sname3}:{winTeam}:{w2} {ratio:.6f}  \n"
                                               f"Bet {sname1}:{hdTeam}:{stake1} {sname2}:X:{stake2} {sname3}:{winTeam}:{stake3} min gain {minGain}\n"
                                               , ratio))
@@ -221,14 +229,14 @@ def treat_OverUnder(sites):
                         stake1 = round (1/o1*150, 0)
                         stake2 = round (1/o2*150, 0)
                         minGain = min(stake1*o1, stake2*o2)/(stake1+stake2)
-                        if ratio<= 1.005 and ratio>= 0.75 :
+                        if ratio<= 1.005 and ratio>= 0.85 :
                             print(f"OU {i} ratio {ratio}")
-                        if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
+                        if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
                             found.append((f"OU {i} {sname1}_O_{o1} {sname2}_U_{o2} {ratio:.6f}  \n"
                                           f"Bet {sname1}_O_{stake1} {sname2}_U_{stake2} min gain {minGain}",ratio))
                     except : 
                         pass
-                for i in ["0.25","0.75","0.5","1","1.25","1.5","1.75","2","2.25","2.5","2.75"]:
+                for i in ["0.25","0.85","0.5","1","1.25","1.5","1.75","2","2.25","2.5","2.75"]:
                     try : 
                         o1 = site1["1_+"+i]
                         o2 = site2["2_-"+i]
@@ -238,9 +246,9 @@ def treat_OverUnder(sites):
                         stake1 = round (s1*150, 0)
                         stake2 = round (s2*150, 0)
                         minGain = min(stake1*o1, stake2*o2)/(stake1+stake2)
-                        if ratio<= 1.005 and ratio>= 0.75:
+                        if ratio<= 1.005 and ratio>= 0.85:
                             print(f"Handicap {i} {sname1}_+_{o1}  {sname2}_-_{o2} {ratio}")
-                        if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
+                        if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
                             found.append((f"Handicap {i} {sname1}_+_{o1}  {sname2}_-_{o2} {ratio} \n"
                                           f"Bets {sname1}_+_{stake1}  {sname2}_-_{stake2} min gain {minGain}",ratio))
                 
@@ -255,7 +263,7 @@ def treat_OverUnder(sites):
                     minGain = min(stake1*o1, stake2*o2)/(stake1+stake2)
                     if ratio<= 1.005:
                             print(f"Handicap 0 {sname1}_+_{o1}  {sname2}_-_{o2} {ratio}")
-                    if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.75:
+                    if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
                         found.append((f"Handicap 0 {sname1}_+_{o1}  {sname2}_-_{o2} {ratio} \n"
                                         f"Bets {sname1}_+_{stake1}  {sname2}_-_{stake2} min gain {minGain}",ratio))
                 except : 
@@ -350,6 +358,8 @@ def process_as_it_comes(queue,snames):
             if arbitrages != [] :
                 print("-------------------------------------------------") 
                 print(common)
+                for ct1,ct2,link in common:
+                    open_chrome(link)
                 for arb in arbitrages:
                     txt, rat = arb
                     print(txt)
