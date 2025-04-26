@@ -169,25 +169,25 @@ def format_1xbet_1X2(res,team1,team2):
     WLD = {}
     if len(res) == 3:
         if clean_string(team1)<=clean_string(team2):
-            WLD["1"]=res[2] * 0.91
-            WLD["2"]=res[0] * 0.91
+            WLD["1"]=res[2] * 0.94
+            WLD["2"]=res[0] * 0.94
         else: 
-            WLD["1"]=res[0] * 0.91
-            WLD["2"]=res[2] * 0.91
-        WLD["X"]=res[1] * 0.91
+            WLD["1"]=res[0] * 0.94
+            WLD["2"]=res[2] * 0.94
+        WLD["X"]=res[1] * 0.94
     return WLD
 
 def format_1xbet_1X2_doubleChance(res,team1,team2):
     WLD = {}
     if len(res) == 3:
         if clean_string(team1)<=clean_string(team2):
-            WLD["1X"]=res[2] * 0.91
-            WLD["2X"]=res[0] * 0.91
-            WLD["12"]=res[1] * 0.91
+            WLD["1X"]=res[2] * 0.94
+            WLD["2X"]=res[0] * 0.94
+            WLD["12"]=res[1] * 0.94
         else:
-            WLD["1X"]=res[0] * 0.91
-            WLD["2X"]=res[2] * 0.91
-            WLD["12"]=res[1] * 0.91
+            WLD["1X"]=res[0] * 0.94
+            WLD["2X"]=res[2] * 0.94
+            WLD["12"]=res[1] * 0.94
     return WLD
 
 def format_1xbet_BTTS(res,team1,team2):#both team to score
@@ -206,9 +206,9 @@ def format_1xbet_OverUnder(res,team1,team2):
         value = float(r[2])
         parts = r[0]
         if 9 == parts:
-            OverUnders[f"O_{r[1]}"] = value * 0.91
+            OverUnders[f"O_{r[1]}"] = value * 0.94
         elif 10 == parts:
-            OverUnders[f"U_{r[1]}"] = value * 0.91
+            OverUnders[f"U_{r[1]}"] = value * 0.94
     return OverUnders
 
 def format_1xbet_Handicap(res,team1,team2):
@@ -222,10 +222,10 @@ def format_1xbet_Handicap(res,team1,team2):
         value = float(r[2])
         parts = r[0]
         if parts in t1:
-            OverUnders[f"1_{r[1]}"] = value * 0.91
+            OverUnders[f"1_{r[1]}"] = value * 0.94
         elif parts in t2:
-            OverUnders[f"2_{r[1]}"] = value * 0.91
+            OverUnders[f"2_{r[1]}"] = value * 0.94
     return OverUnders
 # for m in get_matches_1xbet():
 #     print(m)
-# print(scrappe_bets_1xbet(('Lagarto', 'Uniao Atletico Carmolandense', 'https://1xbet.com/en/line/football/842973-brazil.-campeonato-brasileiro-série-d/253937821-lagarto-uniao-atletico-carmolandense')))
+# print(scrappe_bets_1xbet(('Lagarto', 'Uniao Atletico Carmolandense', 'https://1xbet.com/en/line/football/842973-brazil.-campeonato-brasileiro-série-d/253947821-lagarto-uniao-atletico-carmolandense')))

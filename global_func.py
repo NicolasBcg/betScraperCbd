@@ -2,8 +2,8 @@ import re
 from unidecode import unidecode
 from datetime import datetime,timedelta
 DISPLAY_CONNECTION_ERROR = True
-TIMERANGE_START = 0
-TIMERANGE = 6
+TIMERANGE_START = 4
+TIMERANGE = 7
 DIVISION_NUMBER = 3
 
 def logwrite(message,display_type=""):

@@ -164,17 +164,17 @@ def scrape_bets_ivi(match):
                         for o, odds in enumerate(market["outcomes"])]
     
     teams=[team1,"draw",team2]
-    all_bets["621"] = [[teams[o], odds["odds"]]
+    all_bets["621"] = [[teams[odds["id"]-1], odds["odds"]]
                         for mId,market in markets 
-                        for o, odds in enumerate(market["outcomes"]) if mId == 621]
-    all_bets["545"] = [[teams[o], odds["odds"]]
+                        for odds in market["outcomes"] if mId == 621]
+    all_bets["545"] = [[teams[odds["id"]-9], odds["odds"]]
                         for mId,market in markets 
-                        for o, odds in enumerate(market["outcomes"]) if mId == 545]
+                        for odds in market["outcomes"] if mId == 545]
     
     teams_h = [team1,team2]
-    all_bets["Handicap"] = [[teams_h[o]+" ("+format_h_val(market["specifiers"].split("=")[-1],o)+')', odds["odds"]]
+    all_bets["Handicap"] = [[teams_h[odds["id"]%2]+" ("+format_h_val(market["specifiers"].split("=")[-1],odds["id"]%2)+')', odds["odds"]]
                         for market in hcp_markets 
-                        for o, odds in enumerate(market["outcomes"])]
+                        for odds in market["outcomes"]]
 
 
     bet_types = [('289',"OU",format_ivi_OverUnder),("621","WLD",format_ivi_1X2),("545","doubleChance",format_ivi_1X2_doubleChance),("Handicap","Handicap",format_ivi_Handicap)]

@@ -19,10 +19,15 @@ def get_cookies_and_user_agent():
 
     driver = uc.Chrome(options=options)
     driver.get("https://mobile.marathonbet.com/")
-    
-    print("Waiting for Cloudflare challenge...")
-    time.sleep(10)  # adjust this if needed
+    cookies = driver.get_cookies()
+    while len(cookies) == 0:
+        
+        print("Waiting for Cloudflare challenge...")
+        time.sleep(5)  # adjust this if needed
 
+        # Save cookies and user-agent
+        cookies = driver.get_cookies()
+    time.sleep(10)  # adjust this if needed
     # Save cookies and user-agent
     cookies = driver.get_cookies()
     user_agent = driver.execute_script("return navigator.userAgent")
@@ -120,7 +125,7 @@ async def get_ligue(session,cookies, user_agent, league_id,league_url, semaphore
     for match in find_event_children(data):
         match_id = match["treeId"]
         matchName = match["name"]   
-        if len(matchName)==2:
+        if len(matchName.split(" vs "))==2:
             team1 = matchName.split(" vs ")[0]
             team2 = matchName.split(" vs ")[1]
             match_start = match["eventInfo"]["displayTime"]
@@ -128,6 +133,10 @@ async def get_ligue(session,cookies, user_agent, league_id,league_url, semaphore
             if is_within_4_days(match_start):
                 url_match = f"https://mobile.marathonbet.com/en/sport/prematch/event/{match_id}"
                 matchs.add((team1, team2, url_match))
+                # print(f"found {team1} vs {team2} at {match_start}")
+            # else : 
+                # print(f"not in time {match_start}")
+                                
 # except :
 #     print(f"problem processing {url}")
     return matchs
