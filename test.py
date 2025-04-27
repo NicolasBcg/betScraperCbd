@@ -106,8 +106,13 @@ Handicap_WLD_Configs=[
 {
     'bet1_bet2_list' : [("1_+0.25","2"),("2_+0.25","1")],
     "stake2": lambda o1, o2: (o1 - 1) / (o1 * o2),
-    'gain' : lambda o1,o2,o3,stake1,stake2,stake3 : min(stake1*o1, stake2*o2 + stake1, stake3*o3)/(stake1+stake2+stake3)
+    'gain' : lambda o1,o2,o3,stake1,stake2,stake3 : min(stake1*o1, stake2*draw + 0.5*stake1*o1, stake3*w2)/(stake1+stake2+stake3)
 },
+{
+    'bet1_bet2_list' : [("1_-0.25","2"),("2_-0.25","1")],
+    "stake2": lambda (1-(1/(2*o1)))/(draw)
+    "gain": lambda o1,o2,o3,stake1,stake2,stake3 min(stake1*o1, stake2*draw + 0.5*stake1, stake3*w2)/(stake1+stake2+stake3),
+}
 
 ]
 
@@ -392,7 +397,7 @@ if __name__ == "__main__":
                 "1xbet" : {"get_matches": get_matches_1xbet, "get_all_bets" : get_all_bets_threader_1xbet},
                 "marathon" : {"get_matches": get_matches_marathon, "get_all_bets" : get_all_bets_threader_marathon},
                 # "188bet": {"get_matches": get_matches_188, "get_all_bets" : get_all_bets_threader_188},
-                # "Pinnacle": {"get_matches": get_matches_pinnacle, "get_all_bets" : get_all_bets_threader_Pinnacle},
+                "Pinnacle": {"get_matches": get_matches_pinnacle, "get_all_bets" : get_all_bets_threader_Pinnacle},
                 "Ivi": {"get_matches": get_matches_ivi, "get_all_bets" : get_all_bets_threader_Ivi},
                 # "Mega": {"get_matches": get_matches_mega, "get_all_bets" : get_all_bets_threader_Mega},
                 # "betsson": {"get_matches": get_matches_betsson, "get_all_bets" : get_all_bets_threader_Betsson},

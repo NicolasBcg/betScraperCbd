@@ -6,7 +6,7 @@ import webbrowser
 
 DISPLAY_CONNECTION_ERROR = True
 TIMERANGE_START = 0
-TIMERANGE = 3
+TIMERANGE = 4
 DIVISION_NUMBER = 1
 browser_selected = "edge"
 
