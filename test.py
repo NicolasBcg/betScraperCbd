@@ -8,12 +8,11 @@ from scrapper_1xbet import *
 from scrapper_pinnacle import *
 from scrapper_ivi import *
 from global_func import *
+from scrapper_marathon import *
 import webbrowser
 
 
-def open_chrome(url):
-    chrome_path = 'C:/Program Files/Google/Chrome/Application/chrome.exe %s'
-    webbrowser.get(chrome_path).open(url)
+
 
 
 
@@ -236,7 +235,7 @@ def treat_OverUnder(sites):
                                           f"Bet {sname1}_O_{stake1} {sname2}_U_{stake2} min gain {minGain}",ratio))
                     except : 
                         pass
-                for i in ["0.25","0.85","0.5","1","1.25","1.5","1.75","2","2.25","2.5","2.75"]:
+                for i in ["0.25","0.75","0.5","1","1.25","1.5","1.75","2","2.25","2.5","2.75"]:
                     try : 
                         o1 = site1["1_+"+i]
                         o2 = site2["2_-"+i]
@@ -358,8 +357,11 @@ def process_as_it_comes(queue,snames):
             if arbitrages != [] :
                 print("-------------------------------------------------") 
                 print(common)
-                for ct1,ct2,link in common:
-                    open_chrome(link)
+                for c in common:
+                    if type(c) == tuple:
+                        link = c[2]
+                        if type(link) == str:
+                            open_chrome(link)
                 for arb in arbitrages:
                     txt, rat = arb
                     print(txt)
@@ -388,6 +390,7 @@ if __name__ == "__main__":
         start1 = time.time()
         config = {
                 "1xbet" : {"get_matches": get_matches_1xbet, "get_all_bets" : get_all_bets_threader_1xbet},
+                "marathon" : {"get_matches": get_matches_marathon, "get_all_bets" : get_all_bets_threader_marathon},
                 # "188bet": {"get_matches": get_matches_188, "get_all_bets" : get_all_bets_threader_188},
                 # "Pinnacle": {"get_matches": get_matches_pinnacle, "get_all_bets" : get_all_bets_threader_Pinnacle},
                 "Ivi": {"get_matches": get_matches_ivi, "get_all_bets" : get_all_bets_threader_Ivi},

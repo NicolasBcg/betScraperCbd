@@ -166,15 +166,15 @@ def scrape_bets_ivi(match):
     teams=[team1,"draw",team2]
     all_bets["621"] = [[teams[odds["id"]-1], odds["odds"]]
                         for mId,market in markets 
-                        for odds in market["outcomes"] if mId == 621]
+                        for odds in market["outcomes"] if mId == 621 and odds["active"] == 1]
     all_bets["545"] = [[teams[odds["id"]-9], odds["odds"]]
                         for mId,market in markets 
-                        for odds in market["outcomes"] if mId == 545]
+                        for odds in market["outcomes"] if mId == 545 and odds["active"] == 1]
     
     teams_h = [team1,team2]
     all_bets["Handicap"] = [[teams_h[odds["id"]%2]+" ("+format_h_val(market["specifiers"].split("=")[-1],odds["id"]%2)+')', odds["odds"]]
                         for market in hcp_markets 
-                        for odds in market["outcomes"]]
+                        for odds in market["outcomes"] if odds["active"] == 1] 
 
 
     bet_types = [('289',"OU",format_ivi_OverUnder),("621","WLD",format_ivi_1X2),("545","doubleChance",format_ivi_1X2_doubleChance),("Handicap","Handicap",format_ivi_Handicap)]

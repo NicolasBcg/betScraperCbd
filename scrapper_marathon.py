@@ -20,17 +20,24 @@ def get_cookies_and_user_agent():
     driver = uc.Chrome(options=options)
     driver.get("https://mobile.marathonbet.com/")
     cookies = driver.get_cookies()
-    while len(cookies) == 0:
+    retry = 0
+    while retry<10:
         
         print("Waiting for Cloudflare challenge...")
         time.sleep(5)  # adjust this if needed
 
         # Save cookies and user-agent
         cookies = driver.get_cookies()
+        
+        #check id one of the cookies has a field "name" and if this field == "cf_clearance"
+        if any(cookie["name"] == "cf_clearance" for cookie in cookies):
+            break
+        else : retry+=1
     time.sleep(10)  # adjust this if needed
     # Save cookies and user-agent
     cookies = driver.get_cookies()
     user_agent = driver.execute_script("return navigator.userAgent")
+    # print(cookies)
     driver.quit()
     
 
@@ -55,7 +62,7 @@ def call_api_with_cookies(cookies, user_agent,url):
     if response.ok:
         return response.json()
     else:
-        print(f"Request failed: {response.status_code}")
+        logwrite(f"Request failed: {response.status_code}")
         return None
     
 async def fetch_json(session,cookies, user_agent, url, semaphore, retries=5):
@@ -170,10 +177,10 @@ async def get_matches_marathon_async():
 def get_matches_marathon():    
     return asyncio.run(get_matches_marathon_async())
        
-for match in get_matches_marathon() : 
-    print(match)
+
 
 def get_all_bets_threader_marathon(queue_in,queue_out,blank):
+    cookies, user_agent = get_cookies_and_user_agent()
     while True :
         to_get = queue_in.get()
         if to_get == 0:
@@ -181,7 +188,7 @@ def get_all_bets_threader_marathon(queue_in,queue_out,blank):
         elif to_get == -1:
             queue_out.put(blank)
         else : 
-            queue_out.put(scrappe_bets_marathon(to_get))
+            queue_out.put(scrappe_bets_marathon(to_get,cookies, user_agent))
 def format_h_val(val):
     if val == '-0.0':
         return '0'
@@ -191,44 +198,41 @@ def format_h_val(val):
         return '+'+str(val)
     else :
         return str(val)
-def scrappe_bets_marathon(match):
+def scrappe_bets_marathon(match,cookies, user_agent):
     team1,team2,match_url = match
-    id_match = match_url.split('/')[-1].split('-')[0]
-    url = f'https://marathon.com/LineFeed/GetGameZip?id={id_match}&lng=en&isSubGames=true&GroupEvents=true&allEventsGroupSubGames=true&countevents=250&country=83&fcountry=83&marketType=1&gr=70&isNewBuilder=true'
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-    else:
-        logwrite(f"marathon Error fetching {url}: {response.status_code}", display_type="CONNECTION_ERROR")
+    id_match = match_url.split('/')[-1]
+    url = f'https://mobile.marathonbet.com/mobile-gate/api/v1/events/tree-item?tree-id={id_match}'
+    #https://mobile.marathonbet.com/mobile-gate/api/v1/events/tree-item?tree-id=22562253
+    data = call_api_with_cookies(cookies, user_agent,url)
+    if not data:
+        # logwrite(f"marathon Error fetching {url}: {response.status_code}", display_type="CONNECTION_ERROR")
         return {}
-    try:
-        allbet = data['Value']['GE']
-        all_bets={}  
-    
-        if 'P' in allbet[3]['E'][0][0].keys():
-            offset = 0
-        else: 
-            offset = 1
-        
-        all_bets["1x2"]=[bet[0]['C'] for market in allbet if market["G"] == 1 for bet in market['E']]
-        all_bets["doubleChance"]=[bet[0]['C'] for market in allbet if market["G"] == 8 for bet in market['E']]
+
+
+    all_bets={}  #marketGroups
+    try : 
+        all_bets["1x2"]=[(data["event"]["markets"]["Match_Result"]["selections"][f"Match_Result.{res}"],res) for res in ["1","draw","3"] if f"Match_Result.{res}" in data["event"]["markets"]["Match_Result"]["selections"].keys()]
+        all_bets["doubleChance"]=[(data["event"]["markets"]["Result"]["selections"][f"Result.{res}"],res) for res in ["HD","HA","AD"] if f"Result.{res}" in data["event"]["markets"]["Result"]["selections"].keys()]
 
         # all_bets["Both teams to score"]=[('yes',allbet[3]['E'][0][0]['C']),('no',allbet[2+offset]['E'][1][0]['C'])]
-        all_bets["Total"]=[(bet['T'],bet['P'],bet['C']) for market in allbet if market["G"] == 17 for bet in market['E'][0]+market['E'][1]] #Colonne,Nbbut,Cote
-        all_bets["Handicap"]=[]
-        for market in allbet :
-            if market["G"] == 2 or market["G"] ==2854:
-                for bet in market['E'][0]+market['E'][1]:
-                    if "P" in bet.keys():
-                        all_bets["Handicap"].append((bet['T'],format_h_val(bet['P']),bet['C']))
-                    else:
-                        all_bets["Handicap"].append((bet['T'],"0",bet['C']))
+        all_bets["Total"]=[  (data["event"]["markets"][submarket]["selections"][selection])
+        for market in data["event"]["marketGroups"] if market["marketGroupName"] == "TOTALS" 
+        for submarket in market["marketCodes"] if len(submarket) <15 and submarket != "Total_Goals" and len(data["event"]["markets"][submarket]["selections"]) < 3 
+        for selection in data["event"]["markets"][submarket]["selections"].keys()
+        ]
+        
+        all_bets["Handicap"]= [ (data["event"]["markets"][submarket]["selections"][f"{submarket}.{res}"],res)
+        for market in data["event"]["marketGroups"] if market["marketGroupName"] == "HANDICAP" 
+        for submarket in market["marketCodes"] if len(submarket) <30 and len(data["event"]["markets"][submarket]["selections"]) < 3 
+        for res in ["HB_H","HB_A"] 
+        ]+[ (data["event"]["markets"][submarket]["selections"][f"{submarket}.{res}"],res)
+        for market in data["event"]["marketGroups"] if market["marketGroupName"] == "HANDICAP" 
+        for submarket in market["marketCodes"] if len(submarket) > 30
+        for res in ["HB_ASN_H","HB_ASN_A"]
+        ]
 
-
-    except Exception as e:
-        logwrite(f"marathon : {url} // {match_url} ERROR : {e}", display_type="CONNECTION_ERROR")
-        return {}
-    try : 
+        
+    
         bet_dict = {}
         bet_types = [('Total',"OU",format_marathon_OverUnder),("1x2","WLD",format_marathon_1X2),("doubleChance","doubleChance",format_marathon_1X2_doubleChance),("Handicap","Handicap",format_marathon_Handicap)]
         for key,bet_name,formatter in bet_types :
@@ -236,74 +240,96 @@ def scrappe_bets_marathon(match):
                 bet_dict[bet_name]= formatter(all_bets[key],team1,team2)
             else :
                 bet_dict[bet_name]={}
+
     except Exception as e:
         logwrite(f"marathon 2: {url} // {match_url} ERROR : {e}", display_type="CONNECTION_ERROR")
         traceback.print_exc()
         return {}
+
     return bet_dict
 
 
 def format_marathon_1X2(res,team1,team2):
     WLD = {}
-    if len(res) == 3:
-        if clean_string(team1)<=clean_string(team2):
-            WLD["1"]=res[2] * 0.91
-            WLD["2"]=res[0] * 0.91
-        else: 
-            WLD["1"]=res[0] * 0.91
-            WLD["2"]=res[2] * 0.91
-        WLD["X"]=res[1] * 0.91
+    for infos, r in res :
+        if infos["selState"] == "Active": 
+            value = round(float(infos["coefficient"]["price"]["numerator"]/infos["coefficient"]["price"]["denominator"]),3)+1
+            if clean_string(team1)<=clean_string(team2):
+                if r == '1':
+                    WLD['2'] = value 
+                elif r == '3':
+                    WLD['1'] = value 
+            else : 
+                if r == '1':
+                    WLD['1'] = value 
+                elif r == '3':
+                    WLD['2'] = value
+            if r == 'draw':
+                WLD['X'] = value 
     return WLD
 
 def format_marathon_1X2_doubleChance(res,team1,team2):
     WLD = {}
-    if len(res) == 3:
-        if clean_string(team1)<=clean_string(team2):
-            WLD["1X"]=res[2] * 0.91
-            WLD["2X"]=res[0] * 0.91
-            WLD["12"]=res[1] * 0.91
-        else:
-            WLD["1X"]=res[0] * 0.91
-            WLD["2X"]=res[2] * 0.91
-            WLD["12"]=res[1] * 0.91
+    for infos, r in res :
+        if infos["selState"] == "Active": 
+            value = round(float(infos["coefficient"]["price"]["numerator"]/infos["coefficient"]["price"]["denominator"]),3)+1
+            if clean_string(team1)<=clean_string(team2):
+                if r == 'AD':
+                    WLD["1X"] = value 
+                elif r == 'HD':
+                    WLD["2X"] = value
+            else:
+                if r == 'AD':
+                    WLD["2X"] = value 
+                elif r == 'HD':
+                    WLD["1X"] = value
+            if r == 'HA':
+                WLD["12"]= value
     return WLD
 
-def format_marathon_BTTS(res,team1,team2):#both team to score
-    BTTS = {}
-    for r in res:
-        value = float(r[1])
-        if r[0] == 'yes': 
-            BTTS['Yes']=value
-        elif r[0] == 'no':
-            BTTS['No']=value
-    return BTTS
+# def format_marathon_BTTS(res,team1,team2):#both team to score
+#     BTTS = {}
+#     for r in res:
+#         value = float(r[1])
+#         if r[0] == 'yes': 
+#             BTTS['Yes']=value
+#         elif r[0] == 'no':
+#             BTTS['No']=value
+#     return BTTS
 
 def format_marathon_OverUnder(res,team1,team2):
     OverUnders = {}
-    for r in res:
-        value = float(r[2])
-        parts = r[0]
-        if 9 == parts:
-            OverUnders[f"O_{r[1]}"] = value * 0.91
-        elif 10 == parts:
-            OverUnders[f"U_{r[1]}"] = value * 0.91
+    for infos in res :
+        name = infos["selName"].split(" ")
+        if infos["selState"] == "Active" and "Exactly" not in name: 
+            value = round(float(infos["coefficient"]["price"]["numerator"]/infos["coefficient"]["price"]["denominator"]),3)+1
+            name = infos["selName"].split(" ")
+
+            if name[0] == 'Over':
+                OverUnders[f"O_{name[1]}"] = value
+            elif name[0] == 'Under':
+                OverUnders[f"U_{name[1]}"] = value
     return OverUnders
 
 def format_marathon_Handicap(res,team1,team2):
-    OverUnders = {}
-    t1=[7,3829]
-    t2=[8,3830]
-    if clean_string(team1)<=clean_string(team2):
-        t2= [7,3829]
-        t1=[8,3830]
-    for r in res:
-        value = float(r[2])
-        parts = r[0]
-        if parts in t1:
-            OverUnders[f"1_{r[1]}"] = value * 0.91
-        elif parts in t2:
-            OverUnders[f"2_{r[1]}"] = value * 0.91
-    return OverUnders
-# for m in get_matches_marathon():
-#     print(m)
-# print(scrappe_bets_marathon(('Lagarto', 'Uniao Atletico Carmolandense', 'https://marathon.com/en/line/football/842973-brazil.-campeonato-brasileiro-série-d/253937821-lagarto-uniao-atletico-carmolandense')))
+    handicaps = {}
+    for infos, r in res :
+        if infos["selState"] == "Active": 
+            value = round(float(infos["coefficient"]["price"]["numerator"]/infos["coefficient"]["price"]["denominator"]),3)+1
+            handicap = format_h_val(infos["handicap"])
+            if clean_string(team1)<=clean_string(team2):
+                if r == 'HB_H' or r == 'HB_ASN_H':
+                    handicaps[f"2_{handicap}"] = value 
+                elif r == 'HB_A' or r == 'HB_ASN_A':
+                    handicaps[f"1_{handicap}"] = value
+            else : 
+                if r == 'HB_H' or r == 'HB_ASN_H':
+                    handicaps[f"1_{handicap}"] = value 
+                elif r == 'HB_A' or r == 'HB_ASN_A':
+                    handicaps[f"2_{handicap}"] = value
+
+    return handicaps
+# for match in get_matches_marathon() : 
+#     print(match)
+# cookies, user_agent = get_cookies_and_user_agent()
+# print(scrappe_bets_marathon(('Boston River', 'Miramar Misiones', 'https://mobile.marathonbet.com/en/sport/prematch/event/22479899'),cookies, user_agent))

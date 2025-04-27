@@ -1,10 +1,14 @@
 import re
 from unidecode import unidecode
 from datetime import datetime,timedelta
+import os 
+import webbrowser
+
 DISPLAY_CONNECTION_ERROR = True
-TIMERANGE_START = 4
-TIMERANGE = 7
-DIVISION_NUMBER = 3
+TIMERANGE_START = 0
+TIMERANGE = 3
+DIVISION_NUMBER = 1
+browser_selected = "edge"
 
 def logwrite(message,display_type=""):
     if display_type == "CONNECTION_ERROR" and DISPLAY_CONNECTION_ERROR:
@@ -12,25 +16,15 @@ def logwrite(message,display_type=""):
     if display_type == "":
         print(message)
 
+def open_chrome(url):
+    if browser_selected == "chrome":
+        chrome_path = 'C:/Program Files/Google/Chrome/Application/chrome.exe %s'
+        webbrowser.get(chrome_path).open(url)
+    elif browser_selected == "edge":
+        os.system(f'start msedge {url}')
 
-# async def is_within_4_days(time_str): #for Ivi 
-#     """Check if the event time is within the next 4 days."""
-#     event_time = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
-#     now = datetime.now()
-#     return now <= event_time <= now + timedelta(days=4)
 
-# def is_within_4_days(cutoff_str): #for pinnacle
-#     # Convertir la date du JSON en objet datetime
-#     cutoff_dt = datetime.strptime(cutoff_str, "%Y-%m-%dT%H:%M:%SZ")
-#     # Obtenir la date actuelle en UTC
-#     now = datetime.now()
-#     # Vérifier si la date est dans moins de 4 jours
-#     return now <= cutoff_dt <= now + timedelta(days=4)
 
-# def is_within_4_days(timestamp): # for 1xbet
-#     now = datetime.now()
-#     time = datetime.fromtimestamp(timestamp)
-#     return abs((now - time).days) <= 2
 def is_within_4_days(timestamp):
     now = datetime.now()
     if type(timestamp) == str:
