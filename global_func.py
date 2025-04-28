@@ -3,12 +3,62 @@ from unidecode import unidecode
 from datetime import datetime,timedelta
 import os 
 import webbrowser
-
-DISPLAY_CONNECTION_ERROR = True
+import time
+import threading
+import undetected_chromedriver as uc
+DISPLAY_CONNECTION_ERROR = False
 TIMERANGE_START = 0
 TIMERANGE = 4
-DIVISION_NUMBER = 1
-browser_selected = "edge"
+DIVISION_NUMBER = 3
+browser_selected = "chrome"
+
+
+# Global storage
+shared_data = {
+    "cookies": None,
+    "user_agent": None
+}
+lock_cookies = threading.Lock()
+
+def fetch_global_cookies_and_user_agent():
+    options = uc.ChromeOptions()
+    options.add_argument("--no-sandbox")
+    # options.add_argument("--headless")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--disable-infobars")
+    options.add_argument("--disable-dev-shm-usage")
+
+    driver = uc.Chrome(options=options)
+    driver.get("https://mobile.marathonbet.com/")
+    retry = 0
+
+    while retry < 10:
+        print("Waiting for Cloudflare challenge...")
+        time.sleep(5)
+
+        cookies = driver.get_cookies()
+        if any(cookie["name"] == "cf_clearance" for cookie in cookies):
+            break
+        retry += 1
+
+    time.sleep(5)
+    cookies = driver.get_cookies()
+    if not any(cookie["name"] == "cf_clearance" for cookie in cookies):
+        return None
+    cookie_dict = {cookie["name"]: cookie["value"] for cookie in cookies}
+    
+    user_agent = driver.execute_script("return navigator.userAgent")
+    driver.quit()
+
+    with lock_cookies:
+        shared_data["cookies"] = cookie_dict
+        shared_data["user_agent"] = user_agent
+    
+def get_shared_cookies_and_user_agent():
+    with lock_cookies:
+        return shared_data["cookies"], shared_data["user_agent"]
+
+
 
 def logwrite(message,display_type=""):
     if display_type == "CONNECTION_ERROR" and DISPLAY_CONNECTION_ERROR:

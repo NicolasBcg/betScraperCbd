@@ -26,7 +26,7 @@ def treat_BTTS(sites):
                 if sname2!=sname1:
                     try :
                         ratio = 1/site1[bet+"Yes"]+1/site2[bet+"No"]
-                        if ratio<= 1.005:
+                        if ratio<= 1.02:
                             print(f"YN {ratio} {sname1}_Yes_{site1[bet+'Yes']}_{sname2}_No_{site2[bet+'No']} ")
                         if ratio<= 0.997:
                             found.append((f"{sname1}_Yes_{site1[bet+'Yes']}_{sname2}_No_{site2[bet+'No']}_{bet}",ratio))
@@ -46,7 +46,7 @@ def treat_WLD_DoubleChance(sitesWLD,sitesDoubleChance):
                         ratio = s2+ s1
                         stake1,stake2 = round (s1*200, 0),round (s2*200, 0)
                         minGain = min(stake1*o1, stake2*o2)/(stake1+stake2)
-                        if ratio<= 1.005:
+                        if ratio<= 1.02:
                                 print(f"DoubleChance {sname1}:{s1bet}:{o1} {sname2}:{s2bet}:{o2} {ratio:.6f}")
                         if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
                             found.append((f"DoubleChance {sname1}:{s1bet}:{o1} {sname2}:{s2bet}:{o2} {ratio:.6f}  \n"
@@ -79,7 +79,7 @@ def treat_WLD(sites):
                         stake1,stake2,stake3 = round (s1*200, 0),round (s2*200, 0),round (s3*200, 0)
                         minGain = min(stake1*o1, stake2*o2, stake3*o3)/(stake1+stake2+stake3)
 
-                        if ratio<= 1.005:
+                        if ratio<= 1.02:
                             print(f"WLD ratio {sname1}:1:{o1} {sname2}:X:{o2} {sname3}:2:{o3} {ratio:.6f}")
                         if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
                             found.append((f"WLD ratio {sname1}:1:{o1} {sname2}:X:{o2} {sname3}:2:{o3} {ratio:.6f}  \n"
@@ -106,12 +106,12 @@ Handicap_WLD_Configs=[
 {
     'bet1_bet2_list' : [("1_+0.25","2"),("2_+0.25","1")],
     "stake2": lambda o1, o2: (o1 - 1) / (o1 * o2),
-    'gain' : lambda o1,o2,o3,stake1,stake2,stake3 : min(stake1*o1, stake2*draw + 0.5*stake1*o1, stake3*w2)/(stake1+stake2+stake3)
+    'gain' : lambda o1,o2,o3,stake1,stake2,stake3 : min(stake1*o1, stake2*o2 + 0.5*stake1*(o1+1), stake3*o3)/(stake1+stake2+stake3)
 },
 {
     'bet1_bet2_list' : [("1_-0.25","2"),("2_-0.25","1")],
-    "stake2": lambda (1-(1/(2*o1)))/(draw)
-    "gain": lambda o1,o2,o3,stake1,stake2,stake3 min(stake1*o1, stake2*draw + 0.5*stake1, stake3*w2)/(stake1+stake2+stake3),
+    "stake2": lambda o1, o2: (1-(1/(2*o1)))/(o2),
+    "gain": lambda o1,o2,o3,stake1,stake2,stake3 : min(stake1*o1, stake2*o2 + 0.5*stake1, stake3*o3)/(stake1+stake2+stake3)
 }
 
 ]
@@ -160,7 +160,7 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                                 stake1,stake2,stake3 = round (s1*200, 0),round (s2*200, 0),round (s3*200, 0)
 
                                 minGain = min(stake1*o1, stake2*draw + stake1, stake3*w2)/(stake1+stake2+stake3)
-                                if ratio<= 1.005:
+                                if ratio<= 1.02:
                                     print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi0_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
                                 if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
                                     found.append((f"Handi {sname1}:{hdTeam}:{o1} {sname2}:X:{draw} {sname3}:{winTeam}:{w2} {ratio:.6f}  \n"
@@ -185,7 +185,7 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                                     ratio = s1+ s2+s3
                                     stake1,stake2,stake3 = round (s1*200, 0),round (s2*200, 0),round (s3*200, 0)
                                     minGain = min(stake1*o1, stake2*draw + 0.5*stake1*o1, stake3*w2)/(stake1+stake2+stake3)
-                                    if ratio<= 1.005:
+                                    if ratio<= 1.02:
                                         print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi0_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
                                     if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
                                         found.append((f"Handi {sname1}:{hdTeam}:{o1} {sname2}:X:{draw} {sname3}:{winTeam}:{w2} {ratio:.6f}  \n"
@@ -208,7 +208,7 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                                     ratio = s1+ s2+s3
                                     stake1,stake2,stake3 = round (s1*200, 0),round (s2*200, 0),round (s3*200, 0)
                                     minGain = min(stake1*o1, stake2*draw + 0.5*stake1, stake3*w2)/(stake1+stake2+stake3)
-                                    if ratio<= 1.005:
+                                    if ratio<= 1.02:
                                         print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi0_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
                                     if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
                                         found.append((f"Handi {sname1}:{hdTeam}:{o1} {sname2}:X:{draw} {sname3}:{winTeam}:{w2} {ratio:.6f}  \n"
@@ -233,7 +233,7 @@ def treat_OverUnder(sites):
                         stake1 = round (1/o1*150, 0)
                         stake2 = round (1/o2*150, 0)
                         minGain = min(stake1*o1, stake2*o2)/(stake1+stake2)
-                        if ratio<= 1.005 and ratio>= 0.85 :
+                        if ratio<= 1.02 and ratio>= 0.85 :
                             print(f"OU {i} ratio {ratio}")
                         if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
                             found.append((f"OU {i} {sname1}_O_{o1} {sname2}_U_{o2} {ratio:.6f}  \n"
@@ -250,7 +250,7 @@ def treat_OverUnder(sites):
                         stake1 = round (s1*150, 0)
                         stake2 = round (s2*150, 0)
                         minGain = min(stake1*o1, stake2*o2)/(stake1+stake2)
-                        if ratio<= 1.005 and ratio>= 0.85:
+                        if ratio<= 1.02 and ratio>= 0.85:
                             print(f"Handicap {i} {sname1}_+_{o1}  {sname2}_-_{o2} {ratio}")
                         if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
                             found.append((f"Handicap {i} {sname1}_+_{o1}  {sname2}_-_{o2} {ratio} \n"
@@ -265,7 +265,7 @@ def treat_OverUnder(sites):
                     stake1 = round (1/o1*150, 0)
                     stake2 = round (1/o2*150, 0)
                     minGain = min(stake1*o1, stake2*o2)/(stake1+stake2)
-                    if ratio<= 1.005:
+                    if ratio<= 1.02:
                             print(f"Handicap 0 {sname1}_+_{o1}  {sname2}_-_{o2} {ratio}")
                     if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
                         found.append((f"Handicap 0 {sname1}_+_{o1}  {sname2}_-_{o2} {ratio} \n"

@@ -150,14 +150,17 @@ async def get_ligue(session,cookies, user_agent, league_id,league_url, semaphore
 
 
 async def get_matches_marathon_async():
+    fetch_global_cookies_and_user_agent()
     """Fetches all matches from all leagues asynchronously."""
     url = "https://www.marathonbet.com/en/react/event/menu/prematch"
-    cookies, user_agent = get_cookies_and_user_agent()
+    cookies, user_agent = get_shared_cookies_and_user_agent()
+    print("")
+
     semaphore = asyncio.Semaphore(8)  # Limit concurrent requests to 10
     async with aiohttp.ClientSession() as session:
         data = await fetch_json(session,cookies, user_agent, url, semaphore)
         if not data:
-            return set()
+            return []
         
         ligues = [(ligue["uid"],ligue["url"]) for sport in data["childs"] if sport["label"] == 'Football' 
                   for country in sport["childs"] 
@@ -180,7 +183,7 @@ def get_matches_marathon():
 
 
 def get_all_bets_threader_marathon(queue_in,queue_out,blank):
-    cookies, user_agent = get_cookies_and_user_agent()
+    cookies, user_agent = get_shared_cookies_and_user_agent()
     while True :
         to_get = queue_in.get()
         if to_get == 0:
@@ -331,5 +334,5 @@ def format_marathon_Handicap(res,team1,team2):
     return handicaps
 # for match in get_matches_marathon() : 
 #     print(match)
-# cookies, user_agent = get_cookies_and_user_agent()
+# cookies, user_agent = get_shared_cookies_and_user_agent()
 # print(scrappe_bets_marathon(('Boston River', 'Miramar Misiones', 'https://mobile.marathonbet.com/en/sport/prematch/event/22479899'),cookies, user_agent))
