@@ -8,9 +8,9 @@ import threading
 import undetected_chromedriver as uc
 DISPLAY_CONNECTION_ERROR = False
 TIMERANGE_START = 0
-TIMERANGE = 4
-DIVISION_NUMBER = 3
-browser_selected = "chrome"
+TIMERANGE = 5
+DIVISION_NUMBER = 1
+browser_selected = "edge"
 
 
 # Global storage

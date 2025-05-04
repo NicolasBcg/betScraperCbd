@@ -64,7 +64,7 @@ def treat_WLD(sites):
     for site1, sname1 in sites:
         for site2, sname2 in sites: 
             for site3, sname3 in sites:
-                if not (sname2 == sname1 and sname2 == sname3 and sname1 == sname3):
+                if not (sname2==sname1 or sname2==sname3 or sname1==sname3):
                     try:
                         o1 = site1["1"]
                         o2 = site2["X"]
@@ -91,7 +91,8 @@ def treat_WLD(sites):
         if min(all_ratios)<1.015 and min(all_ratios)>1.007:
             print(f"MIN RATIO : {min(all_ratios):.6f} , {sites}")
     else:
-        print(f"NO RATIO : {sites}")
+        if len(sites)>2:
+            print(f"NO RATIO : {sites}")
 
     return list(set(found))
 
@@ -126,28 +127,28 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
            
             for site2,sname2 in sitesWLD: 
                 for site3,sname3 in sitesWLD: 
-                    # for hdTeam,winTeam in Handicap_WLD_Configs[0]['bet1_bet2_list']:
-                    #     if not (sname2==sname1 and sname2==sname3 and sname1==sname3):
-                    #             try:
-                    #                 o1,o2,o3 = oddsHandicap[hdTeam],site2["X"],site3[winTeam]
-                    #             except : 
-                    #                 print(sname1)
-                    #                 print(oddsHandicap)
-                    #             s1,s2,s3 = 1/o1, Handicap_WLD_Configs[0]['stake2'](o1,o2), 1/o3
-                    #             ratio = s1+ s2+s3
-                    #             stake1,stake2,stake3 = round (s1*200, 0),round (s2*200, 0),round (s3*200, 0)
-                    #             minGain = Handicap_WLD_Configs[0]['gain'](o1,o2,o3,stake1,stake2,stake3)
-                    #             if ratio<= 1.005:
-                    #                 print(f"Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
-                    #             if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
-                    #                 found.append((f"Handi {sname1}:{hdTeam}:{o1} {sname2}:X:{draw} {sname3}:{winTeam}:{w2} {ratio:.6f}  \n"
-                    #                         f"Bet {sname1}:{hdTeam}:{stake1} {sname2}:X:{stake2} {sname3}:{winTeam}:{stake3} min gain {minGain}\n"
-                    #                         , ratio))
-                            
+                    for handicap_config in Handicap_WLD_Configs : 
+                        for hdTeam,winTeam in handicap_config['bet1_bet2_list']:
+                            if not (sname2==sname1 or sname2==sname3 or sname1==sname3):
+                                    try:
+                                        o1,o2,o3 = oddsHandicap[hdTeam],site2["X"],site3[winTeam]                       
+                                        s1,s2,s3 = 1/o1, handicap_config['stake2'](o1,o2), 1/o3
+                                        ratio = s1+ s2+s3
+                                        stake1,stake2,stake3 = round (s1*200, 0),round (s2*200, 0),round (s3*200, 0)
+                                        minGain = handicap_config['gain'](o1,o2,o3,stake1,stake2,stake3)
+                                        if ratio<= 1.02:
+                                            print(f"CONF Handi {hdTeam} WLD ratio {sname1}_1_{o1}_handi_{sname2}_X_{draw}_{sname3}_2_{w2} {ratio}")
+                                        if (minGain >= 1.000 or ratio<= 0.997)  and ratio>= 0.85:
+                                            found.append((f"Handi {sname1}:{hdTeam}:{o1} {sname2}:X:{draw} {sname3}:{winTeam}:{w2} {ratio:.6f}  \n"
+                                                    f"Bet {sname1}:{hdTeam}:{stake1} {sname2}:X:{stake2} {sname3}:{winTeam}:{stake3} min gain {minGain}\n"
+                                                    , ratio))
+                                    except : 
+                                        pass
+                                
 
 
                     for hdTeam,winTeam in [("1_0","2"),("2_0","1")]:
-                        if not (sname2==sname1 and sname2==sname3 and sname1==sname3):
+                        if not (sname2==sname1 or sname2==sname3 or sname1==sname3):
                             try:
                                 o1 = oddsHandicap[hdTeam]
                                 draw = site2["X"]
@@ -173,7 +174,7 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                     
 
                     for hdTeam,winTeam in [("1_+0.25","2"),("2_+0.25","1")]:
-                        if not (sname2==sname1 and sname2==sname3 and sname1==sname3):
+                        if not (sname2==sname1 or sname2==sname3 or sname1==sname3):
                             try:
                                 o1 = oddsHandicap[hdTeam]
                                 draw = site2["X"]
@@ -196,7 +197,7 @@ def treat_Handicap_WLD(sitesHandicap,sitesWLD):
                             except:
                                 pass
                     for hdTeam,winTeam in [("1_-0.25","2"),("2_-0.25","1")]:
-                        if not (sname2==sname1 and sname2==sname3 and sname1==sname3):
+                        if not (sname2==sname1 or sname2==sname3 or sname1==sname3):
                             try:
                                 o1 = oddsHandicap[hdTeam]
                                 draw = site2["X"]
@@ -394,8 +395,8 @@ if __name__ == "__main__":
     while True:
         start1 = time.time()
         config = {
-                "1xbet" : {"get_matches": get_matches_1xbet, "get_all_bets" : get_all_bets_threader_1xbet},
-                "marathon" : {"get_matches": get_matches_marathon, "get_all_bets" : get_all_bets_threader_marathon},
+                # "1xbet" : {"get_matches": get_matches_1xbet, "get_all_bets" : get_all_bets_threader_1xbet},
+                # "marathon" : {"get_matches": get_matches_marathon, "get_all_bets" : get_all_bets_threader_marathon},
                 # "188bet": {"get_matches": get_matches_188, "get_all_bets" : get_all_bets_threader_188},
                 "Pinnacle": {"get_matches": get_matches_pinnacle, "get_all_bets" : get_all_bets_threader_Pinnacle},
                 "Ivi": {"get_matches": get_matches_ivi, "get_all_bets" : get_all_bets_threader_Ivi},
