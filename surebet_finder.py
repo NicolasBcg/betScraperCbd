@@ -392,86 +392,87 @@ def odds_requester(commons,queues_in,queues_out,odd_processor_queue):
 
 if __name__ == "__main__":
     print("Import done")
+    config = {
+        # "1xbet" : {"get_matches": get_matches_1xbet, "get_all_bets" : get_all_bets_threader_1xbet},
+        # "marathon" : {"get_matches": get_matches_marathon, "get_all_bets" : get_all_bets_threader_marathon},
+        # "188bet": {"get_matches": get_matches_188, "get_all_bets" : get_all_bets_threader_188},
+        "Pinnacle": {"get_matches": get_matches_pinnacle, "get_all_bets" : get_all_bets_threader_Pinnacle},
+        "Ivi": {"get_matches": get_matches_ivi, "get_all_bets" : get_all_bets_threader_Ivi},
+        # "Mega": {"get_matches": get_matches_mega, "get_all_bets" : get_all_bets_threader_Mega},
+        # "betsson": {"get_matches": get_matches_betsson, "get_all_bets" : get_all_bets_threader_Betsson},
+    }
+    
+    
+    start1 = time.time()
+
+    common=[]
+    queue = Queue()
+    snames=[key for key in config.keys()] 
+    sfunctions=[config[site]["get_all_bets"] for site in snames]
+
+    threads = [threading.Thread(target=fetch_matches, args=(config[site]["get_matches"], site, queue)) for site in snames]
+    print("getting pairs")
+    for t in threads:
+        t.start()
+
+    for t in threads:
+        t.join()
+
+    results = {}
+    while not queue.empty():
+        results.update(queue.get())
+
+    end = time.time()
+    print(f"total exec time = {end-start1}")
+    
+    # Example usage:
+    teams_list = [results.get(site) for site in snames]
+
+    notFound=[]
+    for l in teams_list:
+        print(len(l))
+    tdict= [{} for _ in teams_list]
+    all_teams = set([])
+    for it,teams in enumerate(teams_list):
+        for team in teams:
+            if team[0]!="Home":
+                if clean_string(team[0])>clean_string(team[1]):
+                    tdict[it][clean_string(team[0])+clean_string(team[1])]=team
+                    all_teams.add(clean_string(team[0])+clean_string(team[1])) 
+                else:
+                    tdict[it][clean_string(team[1])+clean_string(team[0])]=team
+                    all_teams.add(clean_string(team[1])+clean_string(team[0])) 
+    for team_key in all_teams:
+        found = 0
+        final_tuple = [-1 for _ in tdict]
+        for isite,dict_team in enumerate(tdict):
+            if team_key in dict_team:
+                found+=1
+                final_tuple[isite] = dict_team[team_key]
+        if found>=2 : 
+
+            common.append(tuple(final_tuple))
+        else : 
+            notFound.append(tuple(final_tuple))
+
+    all_not = {n:[] for n in snames}
+    for t in common : 
+        for t,val in enumerate(list(t)):
+            if val!=-1:
+                all_not[snames[t]].append((list(val)[0],list(val)[1]))
+            else :
+                all_not[snames[t]].append(("",""))
+    for t in notFound : 
+        for t,val in enumerate(list(t)):
+            if val!=-1:
+                all_not[snames[t]].append((list(val)[0],list(val)[1]))
+            else :
+                all_not[snames[t]].append(("",""))
+
+    df = pd.DataFrame(all_not)
+    # Save to Excel file
+    df.to_excel("teams_data.xlsx", index=False)
     while True:
-        start1 = time.time()
-        config = {
-                # "1xbet" : {"get_matches": get_matches_1xbet, "get_all_bets" : get_all_bets_threader_1xbet},
-                # "marathon" : {"get_matches": get_matches_marathon, "get_all_bets" : get_all_bets_threader_marathon},
-                # "188bet": {"get_matches": get_matches_188, "get_all_bets" : get_all_bets_threader_188},
-                "Pinnacle": {"get_matches": get_matches_pinnacle, "get_all_bets" : get_all_bets_threader_Pinnacle},
-                "Ivi": {"get_matches": get_matches_ivi, "get_all_bets" : get_all_bets_threader_Ivi},
-                # "Mega": {"get_matches": get_matches_mega, "get_all_bets" : get_all_bets_threader_Mega},
-                # "betsson": {"get_matches": get_matches_betsson, "get_all_bets" : get_all_bets_threader_Betsson},
-
-        }
-        common=[]
-        queue = Queue()
-        snames=[key for key in config.keys()] 
-        sfunctions=[config[site]["get_all_bets"] for site in snames]
-
-        threads = [threading.Thread(target=fetch_matches, args=(config[site]["get_matches"], site, queue)) for site in snames]
-        print("getting pairs")
-        for t in threads:
-            t.start()
-
-        for t in threads:
-            t.join()
-
-        results = {}
-        while not queue.empty():
-            results.update(queue.get())
-
-        end = time.time()
-        print(f"total exec time = {end-start1}")
-        
-        # Example usage:
-        teams_list = [results.get(site) for site in snames]
-
-        notFound=[]
-        for l in teams_list:
-            print(len(l))
-        tdict= [{} for _ in teams_list]
-        all_teams = set([])
-        for it,teams in enumerate(teams_list):
-            for team in teams:
-                if team[0]!="Home":
-                    if clean_string(team[0])>clean_string(team[1]):
-                        tdict[it][clean_string(team[0])+clean_string(team[1])]=team
-                        all_teams.add(clean_string(team[0])+clean_string(team[1])) 
-                    else:
-                        tdict[it][clean_string(team[1])+clean_string(team[0])]=team
-                        all_teams.add(clean_string(team[1])+clean_string(team[0])) 
-        for team_key in all_teams:
-            found = 0
-            final_tuple = [-1 for _ in tdict]
-            for isite,dict_team in enumerate(tdict):
-                if team_key in dict_team:
-                    found+=1
-                    final_tuple[isite] = dict_team[team_key]
-            if found>=2 : 
-
-                common.append(tuple(final_tuple))
-            else : 
-                notFound.append(tuple(final_tuple))
-
-        all_not = {n:[] for n in snames}
-        for t in common : 
-            for t,val in enumerate(list(t)):
-                if val!=-1:
-                    all_not[snames[t]].append((list(val)[0],list(val)[1]))
-                else :
-                    all_not[snames[t]].append(("",""))
-        for t in notFound : 
-            for t,val in enumerate(list(t)):
-                if val!=-1:
-                    all_not[snames[t]].append((list(val)[0],list(val)[1]))
-                else :
-                    all_not[snames[t]].append(("",""))
-
-        df = pd.DataFrame(all_not)
-        # Save to Excel file
-        df.to_excel("teams_data.xlsx", index=False)
-        
         print("!!!COMMON!!!")
         print(f'Total : {len(common)}')
         

@@ -9,8 +9,8 @@ import undetected_chromedriver as uc
 DISPLAY_CONNECTION_ERROR = False
 TIMERANGE_START = 0
 TIMERANGE = 5
-DIVISION_NUMBER = 1
-browser_selected = "edge"
+DIVISION_NUMBER = 5
+browser_selected = "chrome"
 
 
 # Global storage
